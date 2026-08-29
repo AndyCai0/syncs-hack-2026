@@ -22,9 +22,8 @@ build/
 .vscode/
 .idea/
 
-# Data
-data/raw/
+# Data: too big for GitHub (>100MB file limit); sydney.osm.pbf is enough to rebuild
+data/raw/australia-latest.osm.pbf
 
 # Machine-specific
 .claude/
-data/graph/

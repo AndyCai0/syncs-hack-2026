@@ -41,6 +41,20 @@ osmium extract -b 150.5,-34.35,151.65,-33.35 data/raw/australia-latest.osm.pbf -
 cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
+## macOS native app (SafeRoutesMac/)
+
+Fully offline SwiftUI app — the routing graph is bundled binary data, no Python, no network, no API keys. Requires macOS 14+.
+
+```bash
+# one-off: export binary graphs (10 s, needs data/graph/ parquets from step 4)
+.venv/bin/python scripts/export_binary_graph.py
+
+# build & test (or just open SafeRoutesMac/Package.swift in Xcode and hit Run)
+cd SafeRoutesMac && xcodebuild -scheme SafeRoutesMac test
+```
+
+Engine: mmap'd SRG1 binary graph (spec in SafeRoutesMac/GRAPH_FORMAT.md), CSR adjacency, binary-heap Dijkstra — loads Sydney (2.2M edges) in ~2.5 s, routes a fastest+safest pair in <0.1 s. UI: NavigationSplitView + MapKit, MKLocalSearchCompleter address search, zoom-gated crash/school/zone layers.
+
 Data sources (all CC BY 4.0, cite in Devpost): TfNSW Road Crash Data 2020–2024, TfNSW Speed/School Zones, NSW Public Schools Master Dataset, © OpenStreetMap contributors.
 
 ## Hackathon notes

@@ -31,10 +31,9 @@ The zeroes mean no pedestrian incidents from this model snapshot were assigned t
 
 Measured on the current Apple-silicon development host through the real FastAPI endpoint on 29 August 2026:
 
-- First route after backend startup, including walking-profile load: 2,551.5 ms (Alexandria case).
-- Warm Alexandria request: 942.4 ms.
-- Warm Allambie Heights request: 946.8 ms.
-- Warm Annandale request: 943.3 ms.
+- Alexandria: 2,356.8 ms cold; 914.9 ms warm.
+- Allambie Heights: 2,267.4 ms cold; 925.4 ms warm.
+- Annandale North: 2,377.7 ms cold; 916.5 ms warm.
 
 These figures are evidence for this machine and graph snapshot, not a cross-device performance guarantee. Expect the first request to be slower.
 

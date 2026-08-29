@@ -1,0 +1,5 @@
+-r requirements.txt
+
+# Used only to rebuild data/graph/*.parquet from an OSM PBF snapshot.
+pyrosm==0.13.1
+openpyxl

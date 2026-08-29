@@ -35,7 +35,7 @@ each array starting at the next 8-byte-aligned offset after the previous one.
 | 8      | Float32 | length     | metres (precomputed in EPSG:7856; use this, never recompute from coords) |
 | 12     | Float32 | risk       | summed severity-weighted crash risk snapped to this edge |
 | 16     | Float32 | riskDark   | same but night-time crashes weighted ×1.5 |
-| 20     | UInt16  | crashCount | number of crashes snapped to this edge (display stat) |
+| 20     | UInt16  | crashCount | unique profile-relevant incidents snapped to this edge |
 | 22     | UInt8   | schoolZone | 1 if edge intersects a 40 km/h school zone |
 | 23     | UInt8   | pad        | 0 |
 | 24     | UInt32  | geomOffset | index of this edge's first point in geomLon/geomLat |
@@ -45,8 +45,10 @@ each array starting at the next 8-byte-aligned offset after the previous one.
 
 - Graph is **undirected**: each EdgeRecord represents travel in both directions.
 - Cost model (must match backend/app/graph_router.py):
-  `cost = length * (1 + k * (risk_or_riskDark / max(length, 5) * 100) / 10)`, then `*0.9` if schoolZone.
-  `k = safety_slider(0..1) * 4.0`. `k = 0` gives the fastest (shortest) path.
+  `cost = length * (1 + k * (risk_or_riskDark / max(length, 5) * 100) / 10)`.
+  `k = historical_hazard_preference(0..1) * 4.0`. `k = 0` gives the fastest (shortest) path.
+- `schoolZone` is display/explanation metadata only. It does not discount cost because the binary format does not model operating times.
+- Walking risk/count fields use unique pedestrian incidents from 2020–2024. The public demo does not advertise the retained experimental cycling profile.
 - Speeds for duration: walking 4.8 km/h, cycling 15 km/h.
 - Geometry is display-only (Float32 ≈ 1 m precision is fine); lengths/risks carry the math.
 

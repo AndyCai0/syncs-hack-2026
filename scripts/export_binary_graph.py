@@ -4,9 +4,8 @@ Reads   data/graph/{profile}_{nodes,edges}.parquet
 Writes  data/appdata/{profile}.graph      (see SafeRoutesMac/GRAPH_FORMAT.md)
         data/appdata/{active_crashes,schools,school_zones}.geojson  (verbatim copies)
 
-crashCount per edge is recomputed here by snapping data/processed/active_crashes.geojson
-to the nearest edge within 40 m in EPSG:7856 -- the same join build_graph.py uses for
-risk / risk_dark -- and counting the crashes that land on each edge.
+crashCount per edge is recomputed here with the same deterministic,
+profile-relevant assignment used by build_graph.py.
 
 Run:  .venv/bin/python scripts/export_binary_graph.py [walking|cycling|both]
 """
@@ -19,6 +18,11 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
+
+try:
+    from scripts.risk_assignment import assign_relevant_crashes
+except ModuleNotFoundError:  # direct `python scripts/export_binary_graph.py`
+    from risk_assignment import assign_relevant_crashes
 
 ROOT = Path(__file__).resolve().parent.parent
 PROCESSED = ROOT / "data" / "processed"
@@ -64,17 +68,11 @@ def _pad_to_align(fh) -> None:
 
 
 def _crash_counts(edges: gpd.GeoDataFrame, profile: str) -> np.ndarray:
-    """Crashes snapped to each edge (nearest edge within 40 m), as in build_graph.py."""
-    crashes = gpd.read_file(PROCESSED / "active_crashes.geojson").to_crs(METRIC)
-    edges_m = edges[["geometry"]].to_crs(METRIC).reset_index(drop=True)
-    joined = gpd.sjoin_nearest(
-        crashes[["geometry"]],
-        edges_m.reset_index(),
-        max_distance=40.0,
-        distance_col="snap_d",
-    )
-    counts = np.bincount(joined["index"].to_numpy(), minlength=len(edges)).astype(np.int64)
-    print(f"[{profile}] snapped {len(joined)}/{len(crashes)} crashes onto "
+    """Count unique profile-relevant crashes assigned to each edge."""
+    crashes = gpd.read_file(PROCESSED / "active_crashes.geojson")
+    assigned = assign_relevant_crashes(crashes, edges, profile=profile)
+    counts = np.bincount(assigned["edge_id"].to_numpy(), minlength=len(edges)).astype(np.int64)
+    print(f"[{profile}] assigned {len(assigned)} unique relevant crashes onto "
           f"{int((counts > 0).sum())} edges (max {counts.max()} on one edge)")
     return np.clip(counts, 0, 65535).astype("<u2")
 
@@ -89,6 +87,15 @@ def export(profile: str) -> dict:
     n_nodes = len(node_lon)
 
     edges = gpd.read_parquet(GRAPH / f"{profile}_edges.parquet")
+    overlay_path = GRAPH / f"{profile}_risk_v1.csv"
+    if overlay_path.exists():
+        overlay = pd.read_csv(overlay_path)
+        edge_ids = overlay["edge_id"].to_numpy(np.int64)
+        edges["risk"] = 0.0
+        edges["risk_dark"] = 0.0
+        edges.loc[edge_ids, "risk"] = overlay["risk"].to_numpy()
+        edges.loc[edge_ids, "risk_dark"] = overlay["risk_dark"].to_numpy()
+        print(f"[{profile}] applied {overlay_path.name} ({len(overlay)} non-zero edges)")
     n_edges = len(edges)
     print(f"[{profile}] {n_nodes} nodes, {n_edges} edges")
 
@@ -191,6 +198,14 @@ def verify(profile: str, seed: int = 0) -> bool:
         GRAPH / f"{profile}_edges.parquet",
         columns=["u", "v", "length_m", "risk", "risk_dark", "school_zone"],
     )
+    overlay_path = GRAPH / f"{profile}_risk_v1.csv"
+    if overlay_path.exists():
+        overlay = pd.read_csv(overlay_path)
+        edge_ids = overlay["edge_id"].to_numpy(np.int64)
+        edges["risk"] = 0.0
+        edges["risk_dark"] = 0.0
+        edges.loc[edge_ids, "risk"] = overlay["risk"].to_numpy()
+        edges.loc[edge_ids, "risk_dark"] = overlay["risk_dark"].to_numpy()
 
     check("magic/version", magic == MAGIC and version == VERSION, f"{magic!r} v{version}")
     check("reserved zero", reserved == b"\x00" * 8)

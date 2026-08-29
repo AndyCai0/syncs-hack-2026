@@ -16,6 +16,7 @@ venv/
 # Build output
 dist/
 build/
+.build/
 *.egg-info/
 
 # Editors

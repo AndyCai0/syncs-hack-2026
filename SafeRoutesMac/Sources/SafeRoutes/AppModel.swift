@@ -39,8 +39,6 @@ final class AppModel {
             && !toText.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
-    var safetyPercent: Int { Int((safety * 100).rounded()) }
-
     // MARK: - Data
 
     func loadDataIfNeeded() async {
@@ -132,7 +130,7 @@ final class AppModel {
     }
 
     private func fitCamera(to pair: RoutePair, start: CLLocationCoordinate2D, end: CLLocationCoordinate2D) {
-        var coords = pair.fastest.coordinates + pair.safest.coordinates
+        var coords = pair.fastest.coordinates + pair.lowerHazard.coordinates
         coords.append(start)
         coords.append(end)
         guard let region = RegionMath.fit(coords) else { return }
@@ -146,14 +144,14 @@ final class AppModel {
     var verdict: String? {
         guard let routes else { return nil }
         let fast = routes.fastest
-        let safe = routes.safest
+        let lower = routes.lowerHazard
         guard fast.riskScore > 0 else { return nil }
-        if safe.riskScore < fast.riskScore {
-            let cut = Int(((1 - safe.riskScore / fast.riskScore) * 100).rounded())
-            let extra = max(0, safe.durationS - fast.durationS)
-            return "Safest route cuts crash-risk exposure by \(cut)% for \(Fmt.duration(extra)) extra."
+        if lower.riskScore < fast.riskScore {
+            let cut = Int(((1 - lower.riskScore / fast.riskScore) * 100).rounded())
+            let extra = max(0, lower.durationS - fast.durationS)
+            return "The alternative has a \(cut)% lower Historical Hazard Exposure Index for \(Fmt.duration(extra)) extra."
         }
-        return "The fastest route is already the safest for this trip."
+        return "No reasonable lower-hazard alternative was found within the 25% duration cap."
     }
 }
 

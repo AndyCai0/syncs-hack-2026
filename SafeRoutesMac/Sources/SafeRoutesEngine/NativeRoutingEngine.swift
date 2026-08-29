@@ -40,9 +40,10 @@ actor GraphStoreCache {
 
 /// `RoutingEngine` backed by the native SRG1 graph + risk-weighted Dijkstra.
 ///
-/// Each `route(...)` call produces two paths from the same snapped endpoints:
-/// the fastest (`k = 0`) and the safest (`k = safety * 4`), computed concurrently.
+    /// Each `route(...)` call produces a fastest baseline and a small bounded
+    /// set of historical-hazard-aware candidates from the same snapped endpoints.
 public final class NativeRoutingEngine: RoutingEngine {
+    public static let maxDetourRatio = 1.25
     private let cache: GraphStoreCache
 
     /// - Parameter dataDirectory: overrides `AppDataLocator.dataDirectory()`
@@ -64,15 +65,29 @@ public final class NativeRoutingEngine: RoutingEngine {
         let target = try store.nearestNode(to: end)
         let safeK = NativeRouter.k(forSafety: safety)
 
-        async let fastest = Task.detached(priority: .userInitiated) {
+        let fastestRoute = try await Task.detached(priority: .userInitiated) {
             try NativeRouter.route(store: store, from: source, to: target,
                                    profile: profile, k: 0, afterDark: afterDark)
         }.value
-        async let safest = Task.detached(priority: .userInitiated) {
-            try NativeRouter.route(store: store, from: source, to: target,
-                                   profile: profile, k: safeK, afterDark: afterDark)
-        }.value
 
-        return try await RoutePair(fastest: fastest, safest: safest)
+        let maximumK = NativeRouter.k(forSafety: 1)
+        let candidateKs = Set([safeK * 0.5, safeK, min(maximumK, safeK * 1.5)])
+            .filter { $0 > 0 }
+            .sorted()
+        var eligible: [RouteResult] = []
+        for candidateK in candidateKs {
+            let candidate = try await Task.detached(priority: .userInitiated) {
+                try NativeRouter.route(store: store, from: source, to: target,
+                                       profile: profile, k: candidateK, afterDark: afterDark)
+            }.value
+            let withinCap = candidate.durationS <= fastestRoute.durationS * Self.maxDetourRatio
+            if withinCap && candidate.riskScore < fastestRoute.riskScore {
+                eligible.append(candidate)
+            }
+        }
+        let lowerHazard = eligible.min {
+            ($0.riskScore, $0.durationS) < ($1.riskScore, $1.durationS)
+        } ?? fastestRoute
+        return RoutePair(fastest: fastestRoute, safest: lowerHazard)
     }
 }

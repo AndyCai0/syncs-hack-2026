@@ -28,6 +28,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 # Greater Sydney bounding box (generous: Hawkesbury to Sutherland, Penrith to coast)
 SYD = dict(minx=150.5, miny=-34.35, maxx=151.65, maxy=-33.35)
+DATA_YEARS = frozenset(range(2020, 2025))
 
 SEVERITY_W = {
     "Fatal": 10.0,
@@ -84,6 +85,7 @@ def main() -> None:
     syd = crash[
         crash["Longitude"].between(SYD["minx"], SYD["maxx"])
         & crash["Latitude"].between(SYD["miny"], SYD["maxy"])
+        & crash["Year of crash"].isin(DATA_YEARS)
         & (crash["has_pedestrian"] | crash["has_bicycle"])
     ].copy()
     cols = [

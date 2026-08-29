@@ -102,7 +102,7 @@ enum Fixtures {
     ///      /   \        (80 m + 80 m, risk-free; edge 3 is stored v->u on purpose)
     ///  0--1-----2
     ///  100   100 (risky)
-    static func diversionGraph(risk: Float, riskDark: Float) -> SyntheticGraph {
+    static func diversionGraph(risk: Float, riskDark: Float, detourLength: Float = 80) -> SyntheticGraph {
         let nodes = [
             SyntheticGraph.Node(lon: 151.0000, lat: -33.9000), // 0
             SyntheticGraph.Node(lon: 151.0010, lat: -33.9000), // 1
@@ -115,15 +115,14 @@ enum Fixtures {
                 (151.0000, -33.9000), (151.0005, -33.9001), (151.0010, -33.9000),
             ]),
             SyntheticGraph.Edge(u: 1, v: 2, length: 100, risk: risk, riskDark: riskDark, crashCount: 7),
-            SyntheticGraph.Edge(u: 1, v: 3, length: 80),
+            SyntheticGraph.Edge(u: 1, v: 3, length: detourLength),
             // Stored 2 -> 3: traversing 3 -> 2 must reverse the geometry.
-            SyntheticGraph.Edge(u: 2, v: 3, length: 80),
+            SyntheticGraph.Edge(u: 2, v: 3, length: detourLength),
         ]
         return SyntheticGraph(nodes: nodes, edges: edges)
     }
 
-    /// Two ways from 0 to 1, both 100 m; the two-hop one is in a school zone
-    /// so its discounted cost (90) beats the direct edge (100).
+    /// Direct 100 m route versus a 102 m two-hop school-zone route.
     static func schoolZoneGraph() -> SyntheticGraph {
         let nodes = [
             SyntheticGraph.Node(lon: 151.0000, lat: -33.9000), // 0
@@ -132,8 +131,29 @@ enum Fixtures {
         ]
         let edges = [
             SyntheticGraph.Edge(u: 0, v: 1, length: 100),
-            SyntheticGraph.Edge(u: 0, v: 2, length: 50, schoolZone: true),
-            SyntheticGraph.Edge(u: 2, v: 1, length: 50, schoolZone: true),
+            SyntheticGraph.Edge(u: 0, v: 2, length: 51, schoolZone: true),
+            SyntheticGraph.Edge(u: 2, v: 1, length: 51, schoolZone: true),
+        ]
+        return SyntheticGraph(nodes: nodes, edges: edges)
+    }
+
+    /// High weighting chooses a 30% detour; medium weighting chooses a lower-
+    /// hazard 20% detour. Used to verify bounded candidate selection.
+    static func boundedCandidateGraph() -> SyntheticGraph {
+        let nodes = [
+            SyntheticGraph.Node(lon: 151.0000, lat: -33.9000), // 0
+            SyntheticGraph.Node(lon: 151.0010, lat: -33.9000), // 1
+            SyntheticGraph.Node(lon: 151.0020, lat: -33.9000), // 2
+            SyntheticGraph.Node(lon: 151.0015, lat: -33.8995), // 3
+            SyntheticGraph.Node(lon: 151.0015, lat: -33.8990), // 4
+        ]
+        let edges = [
+            SyntheticGraph.Edge(u: 0, v: 1, length: 100),
+            SyntheticGraph.Edge(u: 1, v: 2, length: 100, risk: 10, riskDark: 10),
+            SyntheticGraph.Edge(u: 1, v: 3, length: 70, risk: 0.75, riskDark: 0.75),
+            SyntheticGraph.Edge(u: 3, v: 2, length: 70),
+            SyntheticGraph.Edge(u: 1, v: 4, length: 80),
+            SyntheticGraph.Edge(u: 4, v: 2, length: 80),
         ]
         return SyntheticGraph(nodes: nodes, edges: edges)
     }

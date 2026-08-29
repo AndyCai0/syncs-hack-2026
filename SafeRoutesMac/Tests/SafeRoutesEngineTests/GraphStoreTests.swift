@@ -92,7 +92,7 @@ final class GraphStoreTests: XCTestCase {
         XCTAssertEqual(s.cost(edge: 1, k: 4, afterDark: true), 100 * (1 + 4 * 8), accuracy: 1e-6)
 
         let sz = try store(Fixtures.schoolZoneGraph(), name: "sz.graph")
-        XCTAssertEqual(sz.cost(edge: 1, k: 0, afterDark: false), 45, accuracy: 1e-6) // 50 * 0.9
+        XCTAssertEqual(sz.cost(edge: 1, k: 0, afterDark: false), 50, accuracy: 1e-6)
         XCTAssertEqual(sz.cost(edge: 0, k: 0, afterDark: false), 100, accuracy: 1e-6)
     }
 
@@ -139,13 +139,12 @@ final class GraphStoreTests: XCTestCase {
         }
     }
 
-    func testSchoolZoneDiscountAttractsTheRoute() throws {
+    func testSchoolZoneFlagDoesNotDiscountTheRoute() throws {
         let s = try store(Fixtures.schoolZoneGraph())
         let r = try NativeRouter.route(store: s, from: 0, to: 1, profile: .walking, k: 0, afterDark: false)
         XCTAssertEqual(r.distanceM, 100, accuracy: 1e-3)
-        XCTAssertEqual(r.schoolZoneMeters, 100, accuracy: 1e-3)
-        XCTAssertTrue(r.coordinates.contains { abs($0.latitude - (-33.8995)) < 1e-5 },
-                      "expected the discounted school-zone detour through node 2")
+        XCTAssertEqual(r.schoolZoneMeters, 0, accuracy: 1e-3)
+        XCTAssertFalse(r.coordinates.contains { abs($0.latitude - (-33.8995)) < 1e-5 })
     }
 
     func testAfterDarkSwitchesRiskColumn() throws {
@@ -186,7 +185,7 @@ final class GraphStoreTests: XCTestCase {
     // MARK: - Engine wiring
 
     func testEngineRoutesOverSyntheticGraph() async throws {
-        try Fixtures.diversionGraph(risk: 50, riskDark: 50)
+        try Fixtures.diversionGraph(risk: 50, riskDark: 50, detourLength: 70)
             .write(to: tempDir.appendingPathComponent("walking.graph"))
         let engine = NativeRoutingEngine(dataDirectory: tempDir)
 
@@ -194,7 +193,7 @@ final class GraphStoreTests: XCTestCase {
                                           to: .init(latitude: -33.9000, longitude: 151.0020),
                                           profile: .walking, safety: 1.0, afterDark: false)
         XCTAssertEqual(pair.fastest.distanceM, 200, accuracy: 1e-3)
-        XCTAssertEqual(pair.safest.distanceM, 260, accuracy: 1e-3)
+        XCTAssertEqual(pair.safest.distanceM, 240, accuracy: 1e-3)
         XCTAssertLessThan(pair.safest.riskScore, pair.fastest.riskScore)
 
         // Slider at zero: both routes are the fastest one.
@@ -202,6 +201,36 @@ final class GraphStoreTests: XCTestCase {
                                           to: .init(latitude: -33.9000, longitude: 151.0020),
                                           profile: .walking, safety: 0, afterDark: false)
         XCTAssertEqual(flat.safest.distanceM, flat.fastest.distanceM, accuracy: 1e-6)
+    }
+
+    func testEngineRejectsLowerHazardCandidateOverDetourCap() async throws {
+        try Fixtures.diversionGraph(risk: 50, riskDark: 50)
+            .write(to: tempDir.appendingPathComponent("walking.graph"))
+        let engine = NativeRoutingEngine(dataDirectory: tempDir)
+
+        let pair = try await engine.route(from: .init(latitude: -33.9000, longitude: 151.0000),
+                                          to: .init(latitude: -33.9000, longitude: 151.0020),
+                                          profile: .walking, safety: 1.0, afterDark: false)
+
+        XCTAssertEqual(NativeRoutingEngine.maxDetourRatio, 1.25, accuracy: 1e-9)
+        XCTAssertEqual(pair.lowerHazard.distanceM, pair.fastest.distanceM, accuracy: 1e-6)
+        XCTAssertEqual(pair.lowerHazard.riskScore, pair.fastest.riskScore, accuracy: 1e-6)
+    }
+
+    func testEngineSelectsModerateCandidateWhenHighestWeightExceedsCap() async throws {
+        try Fixtures.boundedCandidateGraph()
+            .write(to: tempDir.appendingPathComponent("walking.graph"))
+        let engine = NativeRoutingEngine(dataDirectory: tempDir)
+
+        let pair = try await engine.route(from: .init(latitude: -33.9000, longitude: 151.0000),
+                                          to: .init(latitude: -33.9000, longitude: 151.0020),
+                                          profile: .walking, safety: 1.0, afterDark: false)
+
+        XCTAssertEqual(pair.fastest.distanceM, 200, accuracy: 1e-3)
+        XCTAssertEqual(pair.lowerHazard.distanceM, 240, accuracy: 1e-3)
+        XCTAssertLessThan(pair.lowerHazard.riskScore, pair.fastest.riskScore)
+        XCTAssertLessThanOrEqual(pair.lowerHazard.durationS,
+                                 pair.fastest.durationS * NativeRoutingEngine.maxDetourRatio)
     }
 
     func testEngineReportsMissingGraph() async {

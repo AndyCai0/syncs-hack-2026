@@ -41,7 +41,9 @@ public struct RouteResult: Sendable {
 
 public struct RoutePair: Sendable {
     public var fastest: RouteResult
+    /// Backward-compatible internal name. Public UI calls this lower-hazard.
     public var safest: RouteResult
+    public var lowerHazard: RouteResult { safest }
     public init(fastest: RouteResult, safest: RouteResult) {
         self.fastest = fastest
         self.safest = safest
@@ -63,7 +65,7 @@ public enum RoutingError: Error, LocalizedError {
 }
 
 public protocol RoutingEngine: Sendable {
-    /// safety in 0...1 (slider). afterDark switches to the night-weighted risk column.
+    /// preference in 0...1. afterDark switches to the night-weighted risk column.
     func route(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D,
                profile: TravelProfile, safety: Double, afterDark: Bool) async throws -> RoutePair
 }

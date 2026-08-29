@@ -377,15 +377,14 @@ public final class GraphStore: @unchecked Sendable {
 
     // MARK: - Edge cost model (must match GRAPH_FORMAT.md / graph_router.py)
 
-    /// `cost = length * (1 + k * (risk / max(length, 5) * 100) / 10)`, `* 0.9` in a school zone.
+    /// `cost = length * (1 + k * (risk / max(length, 5) * 100) / 10)`.
+    /// School zones are display-only until their operating times are modelled.
     @inline(__always)
     func cost(edge i: Int, k: Double, afterDark: Bool) -> Double {
         let length = Double(edgeLength[i])
         let risk = Double(afterDark ? edgeRiskDark[i] : edgeRisk[i])
         let riskPer100m = risk / max(length, 5.0) * 100.0
-        var c = length * (1.0 + k * riskPer100m / 10.0)
-        if edgeSchoolZone[i] != 0 { c *= 0.9 }
-        return c
+        return length * (1.0 + k * riskPer100m / 10.0)
     }
 
     // MARK: - Geometry

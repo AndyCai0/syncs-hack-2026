@@ -33,3 +33,4 @@ data/appdata/*.graph
 
 # built app bundle
 dist/
+SafeRoutesMac/.build/

@@ -4,9 +4,8 @@ Reads   data/graph/{profile}_{nodes,edges}.parquet
 Writes  data/appdata/{profile}.graph      (see SafeRoutesMac/GRAPH_FORMAT.md)
         data/appdata/{active_crashes,schools,school_zones}.geojson  (verbatim copies)
 
-crashCount per edge is recomputed here by snapping data/processed/active_crashes.geojson
-to the nearest edge within 40 m in EPSG:7856 -- the same join build_graph.py uses for
-risk / risk_dark -- and counting the crashes that land on each edge.
+crashCount per edge is recomputed here with the same deterministic,
+profile-relevant assignment used by build_graph.py.
 
 Run:  .venv/bin/python scripts/export_binary_graph.py [walking|cycling|both]
 """
@@ -19,6 +18,11 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
+
+try:
+    from scripts.risk_assignment import assign_relevant_crashes
+except ModuleNotFoundError:  # direct `python scripts/export_binary_graph.py`
+    from risk_assignment import assign_relevant_crashes
 
 ROOT = Path(__file__).resolve().parent.parent
 PROCESSED = ROOT / "data" / "processed"
@@ -64,17 +68,11 @@ def _pad_to_align(fh) -> None:
 
 
 def _crash_counts(edges: gpd.GeoDataFrame, profile: str) -> np.ndarray:
-    """Crashes snapped to each edge (nearest edge within 40 m), as in build_graph.py."""
-    crashes = gpd.read_file(PROCESSED / "active_crashes.geojson").to_crs(METRIC)
-    edges_m = edges[["geometry"]].to_crs(METRIC).reset_index(drop=True)
-    joined = gpd.sjoin_nearest(
-        crashes[["geometry"]],
-        edges_m.reset_index(),
-        max_distance=40.0,
-        distance_col="snap_d",
-    )
-    counts = np.bincount(joined["index"].to_numpy(), minlength=len(edges)).astype(np.int64)
-    print(f"[{profile}] snapped {len(joined)}/{len(crashes)} crashes onto "
+    """Count unique profile-relevant crashes assigned to each edge."""
+    crashes = gpd.read_file(PROCESSED / "active_crashes.geojson")
+    assigned = assign_relevant_crashes(crashes, edges, profile=profile)
+    counts = np.bincount(assigned["edge_id"].to_numpy(), minlength=len(edges)).astype(np.int64)
+    print(f"[{profile}] assigned {len(assigned)} unique relevant crashes onto "
           f"{int((counts > 0).sum())} edges (max {counts.max()} on one edge)")
     return np.clip(counts, 0, 65535).astype("<u2")
 

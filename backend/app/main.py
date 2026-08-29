@@ -1,19 +1,17 @@
-"""SafeRoutes backend: fastest-vs-safest walking/cycling routes for Sydney.
-
-MVP routing track: OpenRouteService directions with `avoid_polygons` built from
-clustered high-risk pedestrian/cyclist crash sites (TfNSW 2020-2024, CC BY).
-Requires ORS_API_KEY in backend/.env (free key from openrouteservice.org).
-"""
+"""Historical-hazard-aware walking routes for Sydney school journeys."""
 import json
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Annotated, Literal
 
 import geopandas as gpd
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.middleware.gzip import GZipMiddleware
+from pydantic import BaseModel, Field, field_validator
 from shapely.geometry import LineString, box, mapping
 from shapely.ops import unary_union
 
@@ -21,16 +19,12 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 PROCESSED = ROOT / "data" / "processed"
+DEMO_CASES = ROOT / "data" / "demo_cases.json"
 ORS_KEY = os.getenv("ORS_API_KEY", "")
 ORS_BASE = "https://api.openrouteservice.org/v2/directions"
 
 # Metric CRS for buffering (GDA2020 / MGA zone 56 covers Sydney)
 METRIC = "EPSG:7856"
-
-app = FastAPI(title="SafeRoutes API")
-app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
-)
 
 crashes: gpd.GeoDataFrame | None = None
 crashes_m: gpd.GeoDataFrame | None = None  # projected copy for metric ops
@@ -38,7 +32,6 @@ schools_geojson: dict = {}
 zones_geojson: dict = {}
 
 
-@app.on_event("startup")
 def load_data() -> None:
     global crashes, crashes_m, schools_geojson, zones_geojson
     crashes = gpd.read_file(PROCESSED / "active_crashes.geojson")
@@ -48,9 +41,34 @@ def load_data() -> None:
     print(f"loaded {len(crashes)} active-transport crashes")
 
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    load_data()
+    yield
+
+
+app = FastAPI(title="SafeRoutes API", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+)
+app.add_middleware(GZipMiddleware, minimum_size=1_000)
+
+
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "crashes": 0 if crashes is None else len(crashes), "ors_key": bool(ORS_KEY)}
+    from . import graph_router
+
+    return {
+        "ok": True,
+        "crashes": 0 if crashes is None else len(crashes),
+        "local_walking_graph": graph_router.available(),
+        "ors_key": bool(ORS_KEY),
+    }
+
+
+@app.get("/api/demo_cases")
+def demo_cases() -> list[dict]:
+    return json.loads(DEMO_CASES.read_text(encoding="utf-8"))
 
 
 @app.get("/api/hotspots")
@@ -83,13 +101,28 @@ async def geocode(q: str = Query(..., min_length=2)) -> dict:
     return r.json()
 
 
+Coordinate = Annotated[list[float], Field(min_length=2, max_length=2)]
+SYDNEY_BOUNDS = (150.50, -34.35, 151.65, -33.30)
+
+
 class RouteReq(BaseModel):
-    start: list[float]  # [lon, lat]
-    end: list[float]
-    profile: str = "foot-walking"  # or cycling-regular
-    safety: float = 0.6  # 0 = fastest only, 1 = avoid everything avoidable
+    start: Coordinate  # [lon, lat]
+    end: Coordinate
+    profile: Literal["foot-walking"] = "foot-walking"
+    safety: float = Field(default=0.6, ge=0, le=1)
     after_dark: bool = False
-    engine: str = "auto"  # auto | local | ors
+    engine: Literal["auto", "local", "ors"] = "auto"
+
+    @field_validator("start", "end")
+    @classmethod
+    def validate_sydney_coordinate(cls, coordinate: list[float]) -> list[float]:
+        lon, lat = coordinate
+        if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+            raise ValueError("coordinate must be valid [longitude, latitude]")
+        min_lon, min_lat, max_lon, max_lat = SYDNEY_BOUNDS
+        if not (min_lon <= lon <= max_lon and min_lat <= lat <= max_lat):
+            raise ValueError("coordinate is outside the Greater Sydney demo coverage")
+        return coordinate
 
 
 def corridor_crashes(start: list[float], end: list[float], after_dark: bool) -> gpd.GeoDataFrame:
@@ -155,19 +188,32 @@ async def ors_route(req: RouteReq, avoid_geom: dict | None) -> dict:
     return r.json()
 
 
-def route_stats(route_geojson: dict) -> dict:
+def route_stats(
+    route_geojson: dict,
+    *,
+    crash_frame: gpd.GeoDataFrame | None = None,
+) -> dict:
+    """Describe one route without treating nearby incidents as a probability."""
+
     feat = route_geojson["features"][0]
     line = LineString(feat["geometry"]["coordinates"])
     line_m = gpd.GeoSeries([line], crs="EPSG:4326").to_crs(METRIC).iloc[0]
-    near = crashes_m[crashes_m.distance(line_m) <= 30]
+    source = crashes if crash_frame is None else crash_frame
+    if source is None:
+        raise RuntimeError("crash data is not loaded")
+    pedestrian = source[source["has_pedestrian"].fillna(False).astype(bool)].copy()
+    pedestrian_m = pedestrian.to_crs(METRIC)
+    near_m = pedestrian_m[pedestrian_m.distance(line_m) <= 30]
+    if "crash_id" in near_m.columns:
+        near_m = near_m.drop_duplicates(subset=["crash_id"], keep="first")
     summary = feat["properties"].get("summary", {})
     return {
+        "historical_hazard_index": summary.get("historical_hazard_index"),
+        "nearby_reported_incidents": int(len(near_m)),
         "distance_m": summary.get("distance"),
         "duration_s": summary.get("duration"),
-        "crashes_within_30m": int(len(near)),
-        "risk_score": round(float(near["risk"].sum()), 1),
-        "fatal_nearby": int((near["degree_of_crash"] == "Fatal").sum()),
-        "crash_points": json.loads(crashes[crashes.index.isin(near.index)].to_json()),
+        "data_period": "2020-2024",
+        "model_version": "hack-2026-v1",
     }
 
 
@@ -179,30 +225,49 @@ async def route(req: RouteReq) -> dict:
     if use_local:
         prof = graph_router.get_profile(req.profile)
         try:
-            fastest = prof.route(req.start, req.end, k=0.0, after_dark=req.after_dark)
-            k = req.safety * graph_router.K_MAX
-            safest = prof.route(req.start, req.end, k=k, after_dark=req.after_dark) if k > 0 else fastest
+            pair = graph_router.select_route_pair(
+                prof,
+                req.start,
+                req.end,
+                preference=req.safety,
+                after_dark=req.after_dark,
+            )
         except ValueError as e:
             raise HTTPException(status_code=422, detail=str(e))
+        fastest = pair["fastest"]
+        lower_hazard = pair["lower_hazard"]
         return {
             "engine": "local",
             "fastest": {"route": fastest, "stats": route_stats(fastest)},
-            "safest": {"route": safest, "stats": route_stats(safest)},
+            "lower_hazard": {
+                "route": lower_hazard,
+                "stats": route_stats(lower_hazard),
+            },
+            "alternative_found": pair["alternative_found"],
+            "reason": pair["reason"],
+            "extra_duration_s": pair["extra_duration_s"],
+            "extra_distance_m": pair["extra_distance_m"],
+            "hazard_change_percent": pair["hazard_change_percent"],
+            "detour_ratio": pair["detour_ratio"],
+            "data_period": pair["data_period"],
+            "model_version": pair["model_version"],
             "avoided_polygons": {"type": "FeatureCollection", "features": []},
         }
 
     if not ORS_KEY:
         raise HTTPException(status_code=503, detail="ORS_API_KEY not configured in backend/.env (or build the local graph: scripts/build_graph.py)")
-    sel = corridor_crashes(req.start, req.end, req.after_dark)
-    avoid_geom, avoid_polys = build_avoid_polygons(sel, req.safety)
     fastest = await ors_route(req, None)
-    safest = await ors_route(req, avoid_geom) if avoid_geom else fastest
     return {
         "engine": "ors",
         "fastest": {"route": fastest, "stats": route_stats(fastest)},
-        "safest": {"route": safest, "stats": route_stats(safest)},
-        "avoided_polygons": {"type": "FeatureCollection", "features": [
-            {"type": "Feature", "geometry": g, "properties": {}} for g in avoid_polys
-        ]},
-        "corridor_crash_count": int(len(sel)),
+        "lower_hazard": {"route": fastest, "stats": route_stats(fastest)},
+        "alternative_found": False,
+        "reason": "consistent_hazard_index_unavailable_for_ors",
+        "extra_duration_s": 0,
+        "extra_distance_m": 0,
+        "hazard_change_percent": None,
+        "detour_ratio": 1.0,
+        "data_period": graph_router.DATA_PERIOD,
+        "model_version": graph_router.MODEL_VERSION,
+        "avoided_polygons": {"type": "FeatureCollection", "features": []},
     }

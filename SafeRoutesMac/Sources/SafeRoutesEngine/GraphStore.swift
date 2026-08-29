@@ -150,40 +150,41 @@ public final class GraphStore: @unchecked Sendable {
                 lat.withUnsafeMutableBytes { memcpy($0.baseAddress!, base + nodeLatOff, n * 8) }
             }
             guard e > 0 else { return }
-            try eu.withUnsafeMutableBufferPointer { pu in
-                try ev.withUnsafeMutableBufferPointer { pv in
-                    elen.withUnsafeMutableBufferPointer { pl in
-                        erisk.withUnsafeMutableBufferPointer { pr in
-                            edark.withUnsafeMutableBufferPointer { pd in
-                                ecrash.withUnsafeMutableBufferPointer { pc in
-                                    eszone.withUnsafeMutableBufferPointer { ps in
-                                        egoff.withUnsafeMutableBufferPointer { po in
-                                            egcnt.withUnsafeMutableBufferPointer { pn in
-                                                let u = pu.baseAddress!, v = pv.baseAddress!
-                                                let l = pl.baseAddress!, r = pr.baseAddress!
-                                                let d = pd.baseAddress!, cc = pc.baseAddress!
-                                                let sz = ps.baseAddress!, go = po.baseAddress!, gc = pn.baseAddress!
-                                                var off = edgesOff
-                                                for i in 0..<e {
-                                                    u[i] = UInt32(littleEndian: base.loadUnaligned(fromByteOffset: off, as: UInt32.self))
-                                                    v[i] = UInt32(littleEndian: base.loadUnaligned(fromByteOffset: off + 4, as: UInt32.self))
-                                                    l[i] = Float(bitPattern: UInt32(littleEndian: base.loadUnaligned(fromByteOffset: off + 8, as: UInt32.self)))
-                                                    r[i] = Float(bitPattern: UInt32(littleEndian: base.loadUnaligned(fromByteOffset: off + 12, as: UInt32.self)))
-                                                    d[i] = Float(bitPattern: UInt32(littleEndian: base.loadUnaligned(fromByteOffset: off + 16, as: UInt32.self)))
-                                                    cc[i] = UInt16(littleEndian: base.loadUnaligned(fromByteOffset: off + 20, as: UInt16.self))
-                                                    sz[i] = base.loadUnaligned(fromByteOffset: off + 22, as: UInt8.self)
-                                                    go[i] = UInt32(littleEndian: base.loadUnaligned(fromByteOffset: off + 24, as: UInt32.self))
-                                                    gc[i] = UInt32(littleEndian: base.loadUnaligned(fromByteOffset: off + 28, as: UInt32.self))
-                                                    off += 32
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            // Each EdgeRecord is eight 4-byte little-endian words. memcpy the
+            // whole block into an aligned scratch buffer, then split it into
+            // columns — much cheaper than nine unaligned loads per record.
+            var words = [UInt32](repeating: 0, count: e * 8)
+            words.withUnsafeMutableBytes { memcpy($0.baseAddress!, base + edgesOff, e * 32) }
+            words.withUnsafeBufferPointer { wbuf in
+                let w = wbuf.baseAddress!
+                eu.withUnsafeMutableBufferPointer { pu in
+                ev.withUnsafeMutableBufferPointer { pv in
+                elen.withUnsafeMutableBufferPointer { pl in
+                erisk.withUnsafeMutableBufferPointer { pr in
+                edark.withUnsafeMutableBufferPointer { pd in
+                ecrash.withUnsafeMutableBufferPointer { pc in
+                eszone.withUnsafeMutableBufferPointer { ps in
+                egoff.withUnsafeMutableBufferPointer { po in
+                egcnt.withUnsafeMutableBufferPointer { pn in
+                    let u = pu.baseAddress!, v = pv.baseAddress!
+                    let l = pl.baseAddress!, r = pr.baseAddress!
+                    let d = pd.baseAddress!, cc = pc.baseAddress!
+                    let sz = ps.baseAddress!, go = po.baseAddress!, gc = pn.baseAddress!
+                    var j = 0
+                    for i in 0..<e {
+                        u[i] = UInt32(littleEndian: w[j])
+                        v[i] = UInt32(littleEndian: w[j + 1])
+                        l[i] = Float(bitPattern: UInt32(littleEndian: w[j + 2]))
+                        r[i] = Float(bitPattern: UInt32(littleEndian: w[j + 3]))
+                        d[i] = Float(bitPattern: UInt32(littleEndian: w[j + 4]))
+                        let packed = UInt32(littleEndian: w[j + 5])
+                        cc[i] = UInt16(truncatingIfNeeded: packed)
+                        sz[i] = UInt8(truncatingIfNeeded: packed >> 16)
+                        go[i] = UInt32(littleEndian: w[j + 6])
+                        gc[i] = UInt32(littleEndian: w[j + 7])
+                        j += 8
                     }
-                }
+                }}}}}}}}}
             }
         }
 

@@ -5,6 +5,5 @@ geopandas
 shapely
 scipy>=1.15,<2
 pyarrow
-openpyxl
 httpx
 python-dotenv

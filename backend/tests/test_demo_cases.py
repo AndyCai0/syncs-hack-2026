@@ -31,8 +31,8 @@ def test_committed_demo_cases_are_distinct_bounded_school_walks():
 
 
 @pytest.mark.slow
-def test_first_demo_case_routes_through_local_api_without_ors_key():
-    case = load_cases()[0]
+@pytest.mark.parametrize("case", load_cases(), ids=lambda case: case["id"])
+def test_each_demo_case_routes_through_local_api_without_ors_key(case):
     with TestClient(app) as client:
         health = client.get("/api/health")
         assert health.status_code == 200
@@ -40,7 +40,7 @@ def test_first_demo_case_routes_through_local_api_without_ors_key():
 
         listed = client.get("/api/demo_cases")
         assert listed.status_code == 200
-        assert listed.json()[0]["id"] == case["id"]
+        assert case["id"] in {listed_case["id"] for listed_case in listed.json()}
 
         response = client.post(
             "/api/route",

@@ -119,6 +119,15 @@ def test_falls_back_when_only_lower_hazard_route_exceeds_detour_cap(graph_writer
     assert pair["hazard_change_percent"] is None
 
 
+def test_rounded_duration_never_uses_one_second_slack_above_cap(graph_writer):
+    nodes, profile = diversion_graph(graph_writer, detour_edge_length=75.4)
+
+    pair = select_route_pair(profile, list(nodes[0]), list(nodes[2]), preference=1.0)
+
+    assert pair["alternative_found"] is False
+    assert pair["detour_ratio"] == 1.0
+
+
 def test_after_dark_routing_and_reported_index_use_dark_risk(graph_writer):
     nodes, profile = diversion_graph(
         graph_writer, detour_edge_length=70, risk=0, risk_dark=50

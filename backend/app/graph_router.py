@@ -254,7 +254,7 @@ def select_route_pair(
         summary = _summary(candidate)
         duration = float(summary["duration"])
         hazard = float(summary["historical_hazard_index"])
-        if duration <= fast_duration * max_detour_ratio + 1 and hazard < fast_hazard:
+        if duration <= fast_duration * max_detour_ratio and hazard < fast_hazard:
             eligible.append((hazard, duration, candidate))
 
     if eligible:

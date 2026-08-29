@@ -249,7 +249,11 @@ export default function App() {
       const coords = d.fastest.route.features[0].geometry.coordinates.concat(
         d.lower_hazard.route.features[0].geometry.coordinates)
       const b = coords.reduce((bb, c) => bb.extend(c), new LngLatBounds(coords[0], coords[0]))
-      map?.fitBounds(b, { padding: { top: 60, bottom: 60, left: 420, right: 60 } })
+      const narrowLayout = window.matchMedia('(max-width: 900px)').matches
+      const padding = narrowLayout
+        ? { top: 40, bottom: 40, left: 40, right: 40 }
+        : { top: 60, bottom: 60, left: 420, right: 60 }
+      map?.fitBounds(b, { padding })
     } catch (e) {
       setError(String(e.message || e))
     } finally { setLoading(false) }
@@ -357,7 +361,7 @@ export default function App() {
               {result.alternative_found && result.hazard_change_percent < 0
                 ? `The selected alternative has a ${Math.abs(result.hazard_change_percent).toFixed(0)}% lower Historical Hazard Exposure Index for ${fmtDur(result.extra_duration_s)} and ${fmtDist(result.extra_distance_m)} extra.`
                 : 'No reasonable lower-hazard alternative was found within the 25% duration cap.'}
-              <br />Data period: {result.data_period}. Detour ratio: {result.detour_ratio.toFixed(3)}×.
+              <br />Data period: {result.data_period}. Model: {result.model_version}. Detour ratio: {result.detour_ratio.toFixed(3)}×.
             </p>
           </div>
         )}

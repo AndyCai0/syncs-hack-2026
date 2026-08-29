@@ -286,7 +286,7 @@ struct RouteCard: View {
             Text(Fmt.distance(route.distanceM)).font(.caption)
             Text("Historical Hazard Exposure Index \(Fmt.risk(route.riskScore))")
                 .font(.caption2)
-            Text("Data period 2020–2024")
+            Text("Data 2020–2024 · Model hack-2026-v1")
                 .font(.caption2)
         }
         .foregroundStyle(kind.ink)

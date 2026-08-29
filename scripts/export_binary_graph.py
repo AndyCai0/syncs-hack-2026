@@ -198,6 +198,14 @@ def verify(profile: str, seed: int = 0) -> bool:
         GRAPH / f"{profile}_edges.parquet",
         columns=["u", "v", "length_m", "risk", "risk_dark", "school_zone"],
     )
+    overlay_path = GRAPH / f"{profile}_risk_v1.csv"
+    if overlay_path.exists():
+        overlay = pd.read_csv(overlay_path)
+        edge_ids = overlay["edge_id"].to_numpy(np.int64)
+        edges["risk"] = 0.0
+        edges["risk_dark"] = 0.0
+        edges.loc[edge_ids, "risk"] = overlay["risk"].to_numpy()
+        edges.loc[edge_ids, "risk_dark"] = overlay["risk_dark"].to_numpy()
 
     check("magic/version", magic == MAGIC and version == VERSION, f"{magic!r} v{version}")
     check("reserved zero", reserved == b"\x00" * 8)

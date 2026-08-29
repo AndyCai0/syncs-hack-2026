@@ -40,7 +40,7 @@ These figures are evidence for this machine and graph snapshot, not a cross-devi
 
 ## 90–120 second live sequence
 
-1. **0–15 s:** State the scope: “This compares walking routes for Sydney school journeys using reported pedestrian crash history. It does not claim an objectively safest route.”
+1. **0–15 s:** State the scope: “This compares walking routes for Sydney school journeys using reported pedestrian crash history. It reports historical exposure, not an objective safety classification.”
 2. **15–35 s:** Click **Alexandria Park Community School** under “Try a verified demo route.” Point out that the coordinates bypass place search.
 3. **35–65 s:** Compare the dashed fastest route and solid lower-hazard route. Read the added time and distance, then distinguish the edge-based Historical Hazard Exposure Index from the separate 30-metre nearby-incident count.
 4. **65–85 s:** Point to the 25% duration cap and explain that the example detour is only about 3.4%. Toggle after-dark if desired and explain that recorded dark incidents receive extra weight; do not claim live night safety.

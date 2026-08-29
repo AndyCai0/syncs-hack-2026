@@ -83,8 +83,6 @@ public enum NativeRouter {
         var heap = MinHeap()
         heap.reserveCapacity(4096)
 
-        let lengths = store.edgeLength
-        let risks = afterDark ? store.edgeRiskDark : store.edgeRisk
         let adjStart = store.adjStart
         let adjNode = store.adjNode
         let adjEdge = store.adjEdge
@@ -106,10 +104,7 @@ public enum NativeRouter {
                 let v = Int(adjNode[slot])
                 if settled[v] { continue }
                 let e = Int(adjEdge[slot])
-                let length = Double(lengths[e])
-                let risk = Double(risks[e])
-                let riskPer100m = risk / max(length, 5.0) * 100.0
-                let w = length * (1.0 + k * riskPer100m / 10.0)
+                let w = store.cost(edge: e, k: k, afterDark: afterDark)
                 let alt = du + w
                 if alt < dist[v] {
                     dist[v] = alt

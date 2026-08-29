@@ -87,6 +87,15 @@ def export(profile: str) -> dict:
     n_nodes = len(node_lon)
 
     edges = gpd.read_parquet(GRAPH / f"{profile}_edges.parquet")
+    overlay_path = GRAPH / f"{profile}_risk_v1.csv"
+    if overlay_path.exists():
+        overlay = pd.read_csv(overlay_path)
+        edge_ids = overlay["edge_id"].to_numpy(np.int64)
+        edges["risk"] = 0.0
+        edges["risk_dark"] = 0.0
+        edges.loc[edge_ids, "risk"] = overlay["risk"].to_numpy()
+        edges.loc[edge_ids, "risk_dark"] = overlay["risk_dark"].to_numpy()
+        print(f"[{profile}] applied {overlay_path.name} ({len(overlay)} non-zero edges)")
     n_edges = len(edges)
     print(f"[{profile}] {n_nodes} nodes, {n_edges} edges")
 

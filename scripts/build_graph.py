@@ -86,6 +86,10 @@ def build(profile: str) -> None:
         geometry=edges["geometry"].to_numpy(), crs="EPSG:4326",
     )
     out_edges.to_parquet(GRAPH / f"{profile}_edges.parquet", index=False)
+    overlay = agg.rename(
+        columns={"effective_risk": "risk", "effective_risk_dark": "risk_dark"}
+    ).join(assigned.groupby("edge_id")["crash_id"].nunique().rename("incident_count"))
+    overlay.reset_index().to_csv(GRAPH / f"{profile}_risk_v1.csv", index=False)
     print(f"[{profile}] wrote {GRAPH}/{profile}_{{nodes,edges}}.parquet")
 
 

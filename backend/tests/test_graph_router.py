@@ -1,5 +1,6 @@
 from backend.app.graph_router import MAX_DETOUR_RATIO, Profile, select_route_pair
 import pytest
+import pandas as pd
 
 
 def diversion_graph(graph_writer, detour_edge_length=70, risk=50, risk_dark=None):
@@ -144,3 +145,24 @@ def test_route_rejects_endpoint_more_than_500m_from_graph(graph_writer):
 
     with pytest.raises(ValueError, match="more than 500 m"):
         profile.route([151.0000, -33.8900], list(nodes[1]), k=0)
+
+
+def test_sparse_risk_overlay_replaces_legacy_mixed_mode_edge_risk(graph_writer):
+    nodes = [(151.0000, -33.9000), (151.0010, -33.9000), (151.0020, -33.9000)]
+    graph_dir = graph_writer(
+        nodes,
+        [
+            {"u": 0, "v": 1, "length_m": 100, "risk": 99, "risk_dark": 99},
+            {"u": 1, "v": 2, "length_m": 100, "risk": 88, "risk_dark": 88},
+        ],
+    )
+    pd.DataFrame(
+        [{"edge_id": 0, "risk": 7.0, "risk_dark": 10.5, "incident_count": 1}]
+    ).to_csv(graph_dir / "walking_risk_v1.csv", index=False)
+
+    profile = Profile("walking", graph_dir=graph_dir)
+    day = profile.route(list(nodes[0]), list(nodes[2]), k=0, after_dark=False)
+    night = profile.route(list(nodes[0]), list(nodes[2]), k=0, after_dark=True)
+
+    assert day["features"][0]["properties"]["summary"]["historical_hazard_index"] == 7.0
+    assert night["features"][0]["properties"]["summary"]["historical_hazard_index"] == 10.5

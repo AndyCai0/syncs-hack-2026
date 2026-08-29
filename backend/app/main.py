@@ -34,11 +34,15 @@ zones_geojson: dict = {}
 
 def load_data() -> None:
     global crashes, crashes_m, schools_geojson, zones_geojson
-    crashes = gpd.read_file(PROCESSED / "active_crashes.geojson")
+    source = gpd.read_file(PROCESSED / "active_crashes.geojson")
+    crashes = source[
+        source["year_of_crash"].between(2020, 2024)
+        & source["has_pedestrian"].fillna(False).astype(bool)
+    ].copy()
     crashes_m = crashes.to_crs(METRIC)
     schools_geojson = json.loads((PROCESSED / "schools.geojson").read_text())
     zones_geojson = json.loads((PROCESSED / "school_zones.geojson").read_text())
-    print(f"loaded {len(crashes)} active-transport crashes")
+    print(f"loaded {len(crashes)} reported pedestrian crashes from 2020-2024")
 
 
 @asynccontextmanager
@@ -60,6 +64,7 @@ def health() -> dict:
 
     return {
         "ok": True,
+        "pedestrian_incidents": 0 if crashes is None else len(crashes),
         "crashes": 0 if crashes is None else len(crashes),
         "local_walking_graph": graph_router.available(),
         "ors_key": bool(ORS_KEY),
@@ -73,7 +78,7 @@ def demo_cases() -> list[dict]:
 
 @app.get("/api/hotspots")
 def hotspots() -> dict:
-    """All Sydney ped/bike crash points (frontend renders heat/cluster layer)."""
+    """Reported Sydney pedestrian crash points for the public walking demo."""
     return json.loads(crashes.to_json())
 
 

@@ -6,6 +6,7 @@ import geopandas as gpd
 import numpy as np
 
 METRIC = "EPSG:7856"
+DATA_YEARS = frozenset(range(2020, 2025))
 
 
 def assign_relevant_crashes(
@@ -25,6 +26,8 @@ def assign_relevant_crashes(
         raise ValueError(f"unknown profile: {profile}")
     flag = "has_pedestrian" if profile == "walking" else "has_bicycle"
     relevant = crashes[crashes[flag].fillna(False).astype(bool)].copy()
+    if "year_of_crash" in relevant.columns:
+        relevant = relevant[relevant["year_of_crash"].isin(DATA_YEARS)].copy()
     relevant = relevant.drop_duplicates(subset=["crash_id"], keep="first")
     if relevant.empty:
         return gpd.GeoDataFrame(

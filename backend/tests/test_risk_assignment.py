@@ -43,3 +43,27 @@ def test_walking_assignment_filters_cyclists_and_breaks_edge_ties_deterministica
     ]
     assert assigned.iloc[0]["effective_risk"] == 6.5
     assert assigned.iloc[0]["effective_risk_dark"] == 9.75
+
+
+def test_assignment_excludes_incidents_outside_data_period():
+    crashes = gpd.GeoDataFrame(
+        {
+            "crash_id": ["old", "current"],
+            "has_pedestrian": [True, True],
+            "has_bicycle": [False, False],
+            "year_of_crash": [2019, 2024],
+            "severity_w": [10.0, 5.0],
+            "speed_limit_kmh": [50, 50],
+            "natural_lighting": ["Daylight", "Daylight"],
+        },
+        geometry=[Point(151.0005, -33.9), Point(151.0005, -33.9)],
+        crs="EPSG:4326",
+    )
+    edges = gpd.GeoDataFrame(
+        geometry=[LineString([(151.0, -33.9), (151.001, -33.9)])],
+        crs="EPSG:4326",
+    )
+
+    assigned = assign_relevant_crashes(crashes, edges, profile="walking")
+
+    assert assigned["crash_id"].tolist() == ["current"]

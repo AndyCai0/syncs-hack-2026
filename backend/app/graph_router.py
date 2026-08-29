@@ -55,6 +55,20 @@ class Profile:
         self.length = edges["length_m"].to_numpy(np.float64)
         self.risk = edges["risk"].to_numpy(np.float64)
         self.risk_dark = edges["risk_dark"].to_numpy(np.float64) if "risk_dark" in edges else self.risk
+        overlay_path = graph_dir / f"{name}_risk_v1.csv"
+        self.risk_source = "legacy_graph_columns"
+        if overlay_path.exists():
+            overlay = pd.read_csv(overlay_path)
+            edge_ids = overlay["edge_id"].to_numpy(np.int64)
+            if len(np.unique(edge_ids)) != len(edge_ids):
+                raise ValueError(f"duplicate edge ids in {overlay_path.name}")
+            if len(edge_ids) and (edge_ids.min() < 0 or edge_ids.max() >= len(edges)):
+                raise ValueError(f"edge id outside graph range in {overlay_path.name}")
+            self.risk = np.zeros(len(edges), dtype=np.float64)
+            self.risk_dark = np.zeros(len(edges), dtype=np.float64)
+            self.risk[edge_ids] = overlay["risk"].to_numpy(np.float64)
+            self.risk_dark[edge_ids] = overlay["risk_dark"].to_numpy(np.float64)
+            self.risk_source = overlay_path.name
         self.szone = edges["school_zone"].to_numpy(bool)
         self.geoms = edges.geometry.values  # shapely lines, indexed by original edge id
 

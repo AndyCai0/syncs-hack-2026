@@ -27,3 +27,6 @@ data/raw/australia-latest.osm.pbf
 
 # Machine-specific
 .claude/
+
+# Binary graphs exceed GitHub 100MB hard limit; rebuild: scripts/export_binary_graph.py
+data/appdata/*.graph

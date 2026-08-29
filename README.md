@@ -14,8 +14,8 @@ Theme: **Blocks that make up the world**
 - Crash hotspot heatmap + per-crash detail popups (severity, time of day, lighting)
 - 40 km/h school zone polygons + all Sydney public schools
 - "Fastest vs safest" route comparison with a safety-priority slider and an after-dark mode
-- Routing track 1 (live): OpenRouteService with risk-clustered `avoid_polygons`
-- Routing track 2 (planned): self-built osmnx graph with continuous risk weights `length × (1 + k·risk)`
+- Routing engine (default): self-built Sydney OSM graph (2.2M edges) with per-edge crash risk — cost = `length × (1 + k·risk_density)`, school-zone discount, after-dark risk column. Scipy dijkstra, ~1s per route, fully offline.
+- Routing engine (fallback): OpenRouteService with risk-clustered `avoid_polygons` (needs free ORS key)
 
 ## Getting started
 
@@ -29,10 +29,15 @@ python3 -m venv .venv && .venv/bin/pip install -r backend/requirements.txt
 # 3. ORS key (free): https://openrouteservice.org/dev/#/signup
 cp backend/.env.example backend/.env   # then paste ORS_API_KEY=...
 
-# 4. Run backend
+# 4. Local routing graph (~10 min one-off; needs osmium: conda install -c conda-forge osmium-tool)
+curl -L -o data/raw/australia-latest.osm.pbf https://download.geofabrik.de/australia-oceania/australia-latest.osm.pbf
+osmium extract -b 150.5,-34.35,151.65,-33.35 data/raw/australia-latest.osm.pbf -o data/raw/sydney.osm.pbf
+.venv/bin/python scripts/build_graph.py     # writes data/graph/*.parquet (~200 MB, not in git)
+
+# 5. Run backend
 .venv/bin/uvicorn app.main:app --app-dir backend --port 8000 --reload
 
-# 5. Run frontend (Node 20+)
+# 6. Run frontend (Node 20+)
 cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 

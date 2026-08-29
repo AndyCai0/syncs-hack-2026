@@ -27,3 +27,4 @@ data/raw/
 
 # Machine-specific
 .claude/
+data/graph/

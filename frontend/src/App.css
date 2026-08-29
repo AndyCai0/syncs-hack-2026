@@ -45,6 +45,12 @@ input[type="range"] { accent-color: #2b9348; width: 100%; }
 .go:disabled { background: #a8c8b0; cursor: default; }
 .error { color: #d90429; font-size: 13px; background: #fdecee; padding: 8px 10px; border-radius: 6px; }
 
+.legend { display: flex; gap: 14px; align-items: center; font-size: 12px; color: #444; }
+.legend i { display: inline-block; width: 22px; height: 0; margin-right: 5px; vertical-align: middle; }
+.legend .dash { border-top: 3px dashed #8d99ae; }
+.legend .solid { border-top: 3px solid #2b9348; }
+.legend .badge { margin-left: auto; background: #eefaf1; color: #1b5e2f; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
 .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .card { border-radius: 10px; padding: 12px; font-size: 13px; }
 .card.fast { background: #f1f3f5; border: 1.5px dashed #8d99ae; }

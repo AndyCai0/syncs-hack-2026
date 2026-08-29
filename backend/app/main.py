@@ -89,6 +89,7 @@ class RouteReq(BaseModel):
     profile: str = "foot-walking"  # or cycling-regular
     safety: float = 0.6  # 0 = fastest only, 1 = avoid everything avoidable
     after_dark: bool = False
+    engine: str = "auto"  # auto | local | ors
 
 
 def corridor_crashes(start: list[float], end: list[float], after_dark: bool) -> gpd.GeoDataFrame:
@@ -172,13 +173,32 @@ def route_stats(route_geojson: dict) -> dict:
 
 @app.post("/api/route")
 async def route(req: RouteReq) -> dict:
+    from . import graph_router
+
+    use_local = req.engine == "local" or (req.engine == "auto" and graph_router.available())
+    if use_local:
+        prof = graph_router.get_profile(req.profile)
+        try:
+            fastest = prof.route(req.start, req.end, k=0.0, after_dark=req.after_dark)
+            k = req.safety * graph_router.K_MAX
+            safest = prof.route(req.start, req.end, k=k, after_dark=req.after_dark) if k > 0 else fastest
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+        return {
+            "engine": "local",
+            "fastest": {"route": fastest, "stats": route_stats(fastest)},
+            "safest": {"route": safest, "stats": route_stats(safest)},
+            "avoided_polygons": {"type": "FeatureCollection", "features": []},
+        }
+
     if not ORS_KEY:
-        raise HTTPException(status_code=503, detail="ORS_API_KEY not configured in backend/.env")
+        raise HTTPException(status_code=503, detail="ORS_API_KEY not configured in backend/.env (or build the local graph: scripts/build_graph.py)")
     sel = corridor_crashes(req.start, req.end, req.after_dark)
     avoid_geom, avoid_polys = build_avoid_polygons(sel, req.safety)
     fastest = await ors_route(req, None)
     safest = await ors_route(req, avoid_geom) if avoid_geom else fastest
     return {
+        "engine": "ors",
         "fastest": {"route": fastest, "stats": route_stats(fastest)},
         "safest": {"route": safest, "stats": route_stats(safest)},
         "avoided_polygons": {"type": "FeatureCollection", "features": [

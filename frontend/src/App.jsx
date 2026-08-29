@@ -239,6 +239,13 @@ export default function App() {
         {error && <div className="error">{error}</div>}
 
         {result && (
+          <div className="legend">
+            <span><i className="dash" /> fastest</span>
+            <span><i className="solid" /> safest</span>
+            {result.engine === 'local' && <span className="badge">risk-weighted graph</span>}
+          </div>
+        )}
+        {result && (
           <div className="compare">
             <div className="card fast">
               <h3>⚡ Fastest</h3>

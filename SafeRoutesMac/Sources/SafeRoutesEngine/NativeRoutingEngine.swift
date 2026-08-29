@@ -40,9 +40,10 @@ actor GraphStoreCache {
 
 /// `RoutingEngine` backed by the native SRG1 graph + risk-weighted Dijkstra.
 ///
-/// Each `route(...)` call produces two paths from the same snapped endpoints:
-/// the fastest (`k = 0`) and the safest (`k = safety * 4`), computed concurrently.
+/// Each `route(...)` call produces a fastest baseline and one bounded
+/// historical-hazard-aware candidate from the same snapped endpoints.
 public final class NativeRoutingEngine: RoutingEngine {
+    public static let maxDetourRatio = 1.25
     private let cache: GraphStoreCache
 
     /// - Parameter dataDirectory: overrides `AppDataLocator.dataDirectory()`
@@ -68,11 +69,15 @@ public final class NativeRoutingEngine: RoutingEngine {
             try NativeRouter.route(store: store, from: source, to: target,
                                    profile: profile, k: 0, afterDark: afterDark)
         }.value
-        async let safest = Task.detached(priority: .userInitiated) {
+        async let candidate = Task.detached(priority: .userInitiated) {
             try NativeRouter.route(store: store, from: source, to: target,
                                    profile: profile, k: safeK, afterDark: afterDark)
         }.value
 
-        return try await RoutePair(fastest: fastest, safest: safest)
+        let (fastestRoute, candidateRoute) = try await (fastest, candidate)
+        let withinCap = candidateRoute.durationS <= fastestRoute.durationS * Self.maxDetourRatio
+        let hasLowerIndex = candidateRoute.riskScore < fastestRoute.riskScore
+        let lowerHazard = withinCap && hasLowerIndex ? candidateRoute : fastestRoute
+        return RoutePair(fastest: fastestRoute, safest: lowerHazard)
     }
 }

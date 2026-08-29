@@ -72,16 +72,16 @@ struct RouteMapView: View {
     @MapContentBuilder
     private var routeContent: some MapContent {
         if let routes = model.routes,
-           routes.fastest.coordinates.count >= 2, routes.safest.coordinates.count >= 2 {
+           routes.fastest.coordinates.count >= 2, routes.lowerHazard.coordinates.count >= 2 {
             // Fastest: wide neutral casing so it reads as the "under" line.
             MapPolyline(coordinates: routes.fastest.coordinates)
                 .stroke(.white.opacity(0.85), style: StrokeStyle(lineWidth: 9, lineCap: .round, lineJoin: .round))
             MapPolyline(coordinates: routes.fastest.coordinates)
                 .stroke(Theme.fast, style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
-            // Safest: narrower green line drawn on top.
-            MapPolyline(coordinates: routes.safest.coordinates)
+            // Lower-hazard alternative: narrower green line drawn on top.
+            MapPolyline(coordinates: routes.lowerHazard.coordinates)
                 .stroke(.white.opacity(0.85), style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
-            MapPolyline(coordinates: routes.safest.coordinates)
+            MapPolyline(coordinates: routes.lowerHazard.coordinates)
                 .stroke(Theme.safe, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
         }
     }

@@ -85,7 +85,6 @@ public enum NativeRouter {
 
         let lengths = store.edgeLength
         let risks = afterDark ? store.edgeRiskDark : store.edgeRisk
-        let szone = store.edgeSchoolZone
         let adjStart = store.adjStart
         let adjNode = store.adjNode
         let adjEdge = store.adjEdge
@@ -110,8 +109,7 @@ public enum NativeRouter {
                 let length = Double(lengths[e])
                 let risk = Double(risks[e])
                 let riskPer100m = risk / max(length, 5.0) * 100.0
-                var w = length * (1.0 + k * riskPer100m / 10.0)
-                if szone[e] != 0 { w *= 0.9 }
+                let w = length * (1.0 + k * riskPer100m / 10.0)
                 let alt = du + w
                 if alt < dist[v] {
                     dist[v] = alt

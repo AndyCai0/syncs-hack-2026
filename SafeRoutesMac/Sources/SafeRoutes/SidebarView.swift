@@ -22,8 +22,7 @@ struct SidebarView: View {
                         text: $model.toText,
                         place: $model.toPlace
                     )
-                    profilePicker
-                    safetySlider
+                    hazardPreference
                     toggles
                     findButton
                     if let message = model.errorMessage {
@@ -56,28 +55,24 @@ struct SidebarView: View {
                 Text("SafeRoutes").font(.system(size: 24, weight: .bold))
                 Text("Sydney").font(.system(size: 24, weight: .medium)).foregroundStyle(Theme.safe)
             }
-            Text("Fastest vs safest walking & cycling routes, powered by 5 years of real NSW crash data.")
+            Text("Compare walking routes for Sydney school journeys using reported pedestrian crash history.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private var profilePicker: some View {
-        Picker("Mode", selection: $model.profile) {
-            Text("Walk").tag(TravelProfile.walking)
-            Text("Bike").tag(TravelProfile.cycling)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-    }
-
-    private var safetySlider: some View {
+    private var hazardPreference: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Safety priority: \(model.safetyPercent)%")
+            Text("Historical hazard avoidance")
                 .font(.caption).fontWeight(.semibold)
-            Slider(value: $model.safety, in: 0 ... 1, step: 0.05)
-                .tint(Theme.safe)
+            Picker("Historical hazard avoidance", selection: $model.safety) {
+                Text("Low").tag(0.25)
+                Text("Balanced").tag(0.6)
+                Text("High").tag(1.0)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
         }
     }
 
@@ -121,7 +116,7 @@ struct SidebarView: View {
     private var legend: some View {
         HStack(spacing: 14) {
             LegendSwatch(color: Theme.fast, label: "fastest")
-            LegendSwatch(color: Theme.safe, label: "safest")
+            LegendSwatch(color: Theme.safe, label: "lower historical hazard")
             Spacer()
         }
         .font(.caption2)
@@ -134,7 +129,7 @@ struct SidebarView: View {
             VStack(spacing: 10) {
                 HStack(alignment: .top, spacing: 10) {
                     RouteCard(kind: .fastest, route: routes.fastest)
-                    RouteCard(kind: .safest, route: routes.safest)
+                    RouteCard(kind: .lowerHazard, route: routes.lowerHazard)
                 }
                 if let verdict = model.verdict {
                     Text(verdict)
@@ -150,7 +145,7 @@ struct SidebarView: View {
     }
 
     private var footer: some View {
-        Text("Crash data: Transport for NSW Road Crash Data 2020–2024 (CC BY 4.0). Not a substitute for adult supervision.")
+        Text("Based on reported NSW pedestrian crashes from 2020–2024. The index is not a prediction or guarantee of safety. Always follow current signs, crossings and road conditions.")
             .font(.system(size: 10))
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -268,9 +263,9 @@ struct ErrorBanner: View {
 
 struct RouteCard: View {
     enum Kind {
-        case fastest, safest
+        case fastest, lowerHazard
 
-        var title: String { self == .fastest ? "⚡ Fastest" : "🛡 Safest" }
+        var title: String { self == .fastest ? "Fastest route" : "Lower-hazard route" }
         var accent: Color { self == .fastest ? Theme.fast : Theme.safe }
         var background: Color { self == .fastest ? Color.gray.opacity(0.12) : Theme.safeTint }
         var ink: Color { self == .fastest ? Color.primary : Theme.safeInk }
@@ -284,9 +279,9 @@ struct RouteCard: View {
             Text(kind.title).font(.caption).fontWeight(.semibold)
             Text(Fmt.duration(route.durationS)).font(.title3).fontWeight(.bold)
             Text(Fmt.distance(route.distanceM)).font(.caption)
-            Text("risk score \(Fmt.risk(route.riskScore))")
+            Text("Historical Hazard Exposure Index \(Fmt.risk(route.riskScore))")
                 .font(.caption2)
-            Text("\(route.crashCount) crashes on route")
+            Text("Data period 2020–2024")
                 .font(.caption2)
         }
         .foregroundStyle(kind.ink)

@@ -5,6 +5,11 @@ import './App.css'
 
 const BASEMAP = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
 const SYDNEY = { center: [151.0, -33.87], zoom: 11 }
+const PREFERENCES = [
+  { label: 'Low', value: 0.25 },
+  { label: 'Balanced', value: 0.6 },
+  { label: 'High', value: 1.0 },
+]
 
 function fmtDur(s) {
   if (s == null) return '—'
@@ -16,7 +21,7 @@ function fmtDist(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`
 }
 
-function GeocodeInput({ label, placeholder, value, onSelect }) {
+function GeocodeInput({ label, placeholder, value, onSelect, onError }) {
   const [q, setQ] = useState('')
   const [results, setResults] = useState([])
   const [open, setOpen] = useState(false)
@@ -29,10 +34,16 @@ function GeocodeInput({ label, placeholder, value, onSelect }) {
     timer.current = setTimeout(async () => {
       try {
         const r = await fetch(`/api/geocode?q=${encodeURIComponent(text)}`)
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
         const d = await r.json()
         setResults(d.features || [])
         setOpen(true)
-      } catch { setResults([]) }
+        onError(null)
+      } catch {
+        setResults([])
+        setOpen(false)
+        onError('Place search is unavailable. Use a verified demo route below.')
+      }
     }, 300)
   }
 
@@ -68,13 +79,25 @@ export default function App() {
   const markers = useRef([])
   const [origin, setOrigin] = useState(null)
   const [dest, setDest] = useState(null)
-  const [profile, setProfile] = useState('foot-walking')
   const [safety, setSafety] = useState(0.6)
   const [afterDark, setAfterDark] = useState(false)
   const [showZones, setShowZones] = useState(true)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [geocodeError, setGeocodeError] = useState(null)
+  const [mapNotice, setMapNotice] = useState(null)
+  const [demoCases, setDemoCases] = useState([])
+
+  useEffect(() => {
+    fetch('/api/demo_cases')
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then(setDemoCases)
+      .catch(() => setError('Verified demo routes could not be loaded. Check that the backend is running.'))
+  }, [])
 
   useEffect(() => {
     const map = new MlMap({ container: mapRef.current, style: BASEMAP, ...SYDNEY })
@@ -146,7 +169,7 @@ export default function App() {
       })
 
       // route sources (empty until first query)
-      for (const id of ['route-fast', 'route-safe', 'avoided']) {
+      for (const id of ['route-fast', 'route-lower', 'avoided']) {
         map.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       }
       map.addLayer({
@@ -159,10 +182,13 @@ export default function App() {
         paint: { 'line-color': '#8d99ae', 'line-width': 5, 'line-dasharray': [1.5, 1.5] },
       })
       map.addLayer({
-        id: 'route-safe-line', type: 'line', source: 'route-safe',
+        id: 'route-lower-line', type: 'line', source: 'route-lower',
         layout: { 'line-cap': 'round' },
         paint: { 'line-color': '#2b9348', 'line-width': 5 },
       })
+    })
+    map.on('error', () => {
+      setMapNotice('The online basemap may be unavailable; verified coordinates and local routing still work.')
     })
     return () => map.remove()
   }, [])
@@ -175,54 +201,104 @@ export default function App() {
     map.setLayoutProperty('zones-line', 'visibility', vis)
   }, [showZones])
 
-  const doRoute = useCallback(async () => {
-    if (!origin || !dest) return
+  const doRoute = useCallback(async (
+    routeOrigin = origin,
+    routeDest = dest,
+    routeSafety = safety,
+    routeAfterDark = afterDark,
+  ) => {
+    if (!routeOrigin || !routeDest) return
     setLoading(true); setError(null)
     try {
       const r = await fetch('/api/route', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ start: origin.coords, end: dest.coords, profile, safety: Number(safety), after_dark: afterDark }),
+        body: JSON.stringify({
+          start: routeOrigin.coords,
+          end: routeDest.coords,
+          profile: 'foot-walking',
+          safety: Number(routeSafety),
+          after_dark: routeAfterDark,
+          engine: 'local',
+        }),
       })
       if (!r.ok) throw new Error((await r.json()).detail || `HTTP ${r.status}`)
       const d = await r.json()
       setResult(d)
       const map = mapObj.current
-      map.getSource('route-fast').setData(d.fastest.route)
-      map.getSource('route-safe').setData(d.safest.route)
-      map.getSource('avoided').setData(d.avoided_polygons)
+      map?.getSource('route-fast')?.setData(d.fastest.route)
+      map?.getSource('route-lower')?.setData(d.lower_hazard.route)
+      map?.getSource('avoided')?.setData(d.avoided_polygons)
       markers.current.forEach((m) => m.remove())
-      markers.current = [
-        new Marker({ color: '#2b9348' }).setLngLat(origin.coords).addTo(map),
-        new Marker({ color: '#d90429' }).setLngLat(dest.coords).addTo(map),
-      ]
+      if (map) {
+        markers.current = [
+          new Marker({ color: '#2b9348' }).setLngLat(routeOrigin.coords).addTo(map),
+          new Marker({ color: '#d90429' }).setLngLat(routeDest.coords).addTo(map),
+        ]
+      }
       const coords = d.fastest.route.features[0].geometry.coordinates.concat(
-        d.safest.route.features[0].geometry.coordinates)
+        d.lower_hazard.route.features[0].geometry.coordinates)
       const b = coords.reduce((bb, c) => bb.extend(c), new LngLatBounds(coords[0], coords[0]))
-      map.fitBounds(b, { padding: { top: 60, bottom: 60, left: 380, right: 60 } })
+      map?.fitBounds(b, { padding: { top: 60, bottom: 60, left: 420, right: 60 } })
     } catch (e) {
       setError(String(e.message || e))
     } finally { setLoading(false) }
-  }, [origin, dest, profile, safety, afterDark])
+  }, [origin, dest, safety, afterDark])
+
+  const runDemo = useCallback((demo) => {
+    const routeOrigin = { label: demo.origin_label, coords: demo.start }
+    const routeDest = {
+      label: `${demo.school_name} — approximate destination`,
+      coords: demo.end,
+    }
+    setOrigin(routeOrigin)
+    setDest(routeDest)
+    setSafety(1.0)
+    setAfterDark(Boolean(demo.after_dark))
+    setGeocodeError(null)
+    doRoute(routeOrigin, routeDest, 1.0, Boolean(demo.after_dark))
+  }, [doRoute])
 
   const fast = result?.fastest?.stats
-  const safe = result?.safest?.stats
+  const lower = result?.lower_hazard?.stats
 
   return (
     <div className="app">
       <div className="sidebar">
         <h1>SafeRoutes <span>Sydney</span></h1>
-        <p className="tagline">Fastest vs safest walking &amp; cycling routes, powered by 5 years of real NSW crash data.</p>
+        <p className="tagline">Compare walking routes for Sydney school journeys using reported pedestrian crash history.</p>
 
-        <GeocodeInput label="From" placeholder="Home address…" value={origin} onSelect={setOrigin} />
-        <GeocodeInput label="To" placeholder="School or destination…" value={dest} onSelect={setDest} />
+        {demoCases.length > 0 && (
+          <section className="demo-cases" aria-label="Verified demo routes">
+            <div className="section-label">Try a verified demo route</div>
+            <div className="demo-grid">
+              {demoCases.map((demo) => (
+                <button key={demo.id} onClick={() => runDemo(demo)} disabled={loading}>
+                  <strong>{demo.school_name}</strong>
+                  <span>{fmtDist(demo.fastest.distance_m)} walk · {Math.round((demo.detour_ratio - 1) * 100)}% detour</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
-        <div className="row">
-          <button className={profile === 'foot-walking' ? 'seg on' : 'seg'} onClick={() => setProfile('foot-walking')}>🚶 Walk</button>
-          <button className={profile === 'cycling-regular' ? 'seg on' : 'seg'} onClick={() => setProfile('cycling-regular')}>🚲 Bike</button>
+        <GeocodeInput label="From" placeholder="Home address…" value={origin} onSelect={setOrigin} onError={setGeocodeError} />
+        <GeocodeInput label="To" placeholder="School or destination…" value={dest} onSelect={setDest} onError={setGeocodeError} />
+        {geocodeError && <div className="notice">{geocodeError}</div>}
+
+        <div>
+          <div className="section-label">Historical hazard avoidance</div>
+          <div className="row preference" role="group" aria-label="Historical hazard avoidance">
+            {PREFERENCES.map((option) => (
+              <button
+                key={option.label}
+                className={Number(safety) === option.value ? 'seg on' : 'seg'}
+                onClick={() => setSafety(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
-
-        <label className="slider-label">Safety priority: {Math.round(safety * 100)}%</label>
-        <input type="range" min="0" max="1" step="0.05" value={safety} onChange={(e) => setSafety(e.target.value)} />
 
         <label className="check">
           <input type="checkbox" checked={afterDark} onChange={(e) => setAfterDark(e.target.checked)} />
@@ -233,45 +309,54 @@ export default function App() {
           Show 40 km/h school zones
         </label>
 
-        <button className="go" onClick={doRoute} disabled={!origin || !dest || loading}>
+        <button className="go" onClick={() => doRoute()} disabled={!origin || !dest || loading}>
           {loading ? 'Routing…' : 'Find routes'}
         </button>
         {error && <div className="error">{error}</div>}
+        {mapNotice && <div className="notice">{mapNotice}</div>}
 
         {result && (
           <div className="legend">
             <span><i className="dash" /> fastest</span>
-            <span><i className="solid" /> safest</span>
-            {result.engine === 'local' && <span className="badge">risk-weighted graph</span>}
+            <span><i className="solid" /> lower historical hazard</span>
+            {result.engine === 'local' && <span className="badge">local graph</span>}
           </div>
         )}
         {result && (
           <div className="compare">
             <div className="card fast">
-              <h3>⚡ Fastest</h3>
+              <h3>Fastest route</h3>
               <div className="big">{fmtDur(fast.duration_s)}</div>
               <div>{fmtDist(fast.distance_m)}</div>
-              <div className="risk">☠ {fast.crashes_within_30m} crashes on route<br />risk score {fast.risk_score}{fast.fatal_nearby > 0 && <b> · {fast.fatal_nearby} fatal</b>}</div>
+              <dl>
+                <dt>Historical Hazard Exposure Index</dt><dd>{fast.historical_hazard_index ?? '—'}</dd>
+                <dt>Reported pedestrian incidents within 30 m</dt><dd>{fast.nearby_reported_incidents}</dd>
+              </dl>
             </div>
-            <div className="card safe">
-              <h3>🛡 Safest</h3>
-              <div className="big">{fmtDur(safe.duration_s)}</div>
-              <div>{fmtDist(safe.distance_m)}</div>
-              <div className="risk">☠ {safe.crashes_within_30m} crashes on route<br />risk score {safe.risk_score}{safe.fatal_nearby > 0 && <b> · {safe.fatal_nearby} fatal</b>}</div>
+            <div className="card lower">
+              <h3>Lower-hazard route</h3>
+              <div className="big">{fmtDur(lower.duration_s)}</div>
+              <div>{fmtDist(lower.distance_m)}</div>
+              <dl>
+                <dt>Historical Hazard Exposure Index</dt><dd>{lower.historical_hazard_index ?? '—'}</dd>
+                <dt>Reported pedestrian incidents within 30 m</dt><dd>{lower.nearby_reported_incidents}</dd>
+              </dl>
             </div>
-            {fast.risk_score > 0 && (
-              <p className="verdict">
-                {safe.risk_score < fast.risk_score
-                  ? `Safest route cuts crash-risk exposure by ${Math.round((1 - safe.risk_score / fast.risk_score) * 100)}% for ${fmtDur(safe.duration_s - fast.duration_s)} extra.`
-                  : 'The fastest route is already the safest for this trip.'}
-              </p>
-            )}
+            <p className="verdict">
+              {result.alternative_found && result.hazard_change_percent < 0
+                ? `The selected alternative has a ${Math.abs(result.hazard_change_percent).toFixed(0)}% lower Historical Hazard Exposure Index for ${fmtDur(result.extra_duration_s)} and ${fmtDist(result.extra_distance_m)} extra.`
+                : 'No reasonable lower-hazard alternative was found within the 25% duration cap.'}
+              <br />Data period: {result.data_period}. Detour ratio: {result.detour_ratio.toFixed(3)}×.
+            </p>
           </div>
         )}
 
+        <div className="method-warning">
+          Based on reported NSW pedestrian crashes from 2020–2024. This index is not a prediction or guarantee of safety. Always follow current signs, crossings and road conditions.
+        </div>
+
         <footer>
-          Crash data: Transport for NSW Road Crash Data 2020–2024 (CC BY 4.0).
-          Not a substitute for adult supervision.
+          TfNSW reported crash data · OpenStreetMap route graph · CARTO basemap. See Data Sources for separate attribution and licences.
         </footer>
       </div>
       <div ref={mapRef} className="map" />

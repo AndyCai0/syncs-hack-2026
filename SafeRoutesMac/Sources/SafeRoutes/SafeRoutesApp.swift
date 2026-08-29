@@ -15,7 +15,6 @@ struct SafeRoutesApp: App {
                 .frame(minWidth: 980, minHeight: 640)
         }
         .windowResizability(.contentMinSize)
-        .windowStyle(.hiddenTitleBar)
     }
 }
 
@@ -23,13 +22,17 @@ struct ContentView: View {
     @State private var model = AppModel()
 
     var body: some View {
-        NavigationSplitView {
+        // Plain HStack instead of NavigationSplitView: the split view's
+        // AppKit hosting crashes on this macOS beta when the Map invalidates
+        // layout during the sidebar collapse animation.
+        HStack(spacing: 0) {
             SidebarView(model: model)
-                .navigationSplitViewColumnWidth(min: 320, ideal: 340, max: 430)
-        } detail: {
+                .frame(width: 350)
+            Divider()
             RouteMapView(model: model)
                 .ignoresSafeArea(edges: .all)
         }
+        .navigationTitle("")
         .task {
             await model.loadDataIfNeeded()
         }

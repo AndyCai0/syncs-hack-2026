@@ -3,7 +3,18 @@ import { Map as MlMap, Marker, Popup, NavigationControl, LngLatBounds } from 'ma
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 
-const BASEMAP = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+const BASEMAP = {
+  version: 8,
+  sources: {
+    osm: {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors',
+    },
+  },
+  layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+}
 const SYDNEY = { center: [151.0, -33.87], zoom: 11 }
 const PREFERENCES = [
   { label: 'Low', value: 0.25 },
@@ -356,7 +367,7 @@ export default function App() {
         </div>
 
         <footer>
-          TfNSW reported crash data · OpenStreetMap route graph · CARTO basemap. See Data Sources for separate attribution and licences.
+          TfNSW reported crash data · OpenStreetMap route graph and online basemap. See Data Sources for separate attribution and licences.
         </footer>
       </div>
       <div ref={mapRef} className="map" />

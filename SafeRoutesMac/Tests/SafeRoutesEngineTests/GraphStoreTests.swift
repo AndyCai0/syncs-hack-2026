@@ -217,6 +217,22 @@ final class GraphStoreTests: XCTestCase {
         XCTAssertEqual(pair.lowerHazard.riskScore, pair.fastest.riskScore, accuracy: 1e-6)
     }
 
+    func testEngineSelectsModerateCandidateWhenHighestWeightExceedsCap() async throws {
+        try Fixtures.boundedCandidateGraph()
+            .write(to: tempDir.appendingPathComponent("walking.graph"))
+        let engine = NativeRoutingEngine(dataDirectory: tempDir)
+
+        let pair = try await engine.route(from: .init(latitude: -33.9000, longitude: 151.0000),
+                                          to: .init(latitude: -33.9000, longitude: 151.0020),
+                                          profile: .walking, safety: 1.0, afterDark: false)
+
+        XCTAssertEqual(pair.fastest.distanceM, 200, accuracy: 1e-3)
+        XCTAssertEqual(pair.lowerHazard.distanceM, 240, accuracy: 1e-3)
+        XCTAssertLessThan(pair.lowerHazard.riskScore, pair.fastest.riskScore)
+        XCTAssertLessThanOrEqual(pair.lowerHazard.durationS,
+                                 pair.fastest.durationS * NativeRoutingEngine.maxDetourRatio)
+    }
+
     func testEngineReportsMissingGraph() async {
         let engine = NativeRoutingEngine(dataDirectory: tempDir.appendingPathComponent("empty", isDirectory: true))
         do {

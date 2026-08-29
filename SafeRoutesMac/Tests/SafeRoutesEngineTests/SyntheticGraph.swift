@@ -136,4 +136,25 @@ enum Fixtures {
         ]
         return SyntheticGraph(nodes: nodes, edges: edges)
     }
+
+    /// High weighting chooses a 30% detour; medium weighting chooses a lower-
+    /// hazard 20% detour. Used to verify bounded candidate selection.
+    static func boundedCandidateGraph() -> SyntheticGraph {
+        let nodes = [
+            SyntheticGraph.Node(lon: 151.0000, lat: -33.9000), // 0
+            SyntheticGraph.Node(lon: 151.0010, lat: -33.9000), // 1
+            SyntheticGraph.Node(lon: 151.0020, lat: -33.9000), // 2
+            SyntheticGraph.Node(lon: 151.0015, lat: -33.8995), // 3
+            SyntheticGraph.Node(lon: 151.0015, lat: -33.8990), // 4
+        ]
+        let edges = [
+            SyntheticGraph.Edge(u: 0, v: 1, length: 100),
+            SyntheticGraph.Edge(u: 1, v: 2, length: 100, risk: 10, riskDark: 10),
+            SyntheticGraph.Edge(u: 1, v: 3, length: 70, risk: 0.75, riskDark: 0.75),
+            SyntheticGraph.Edge(u: 3, v: 2, length: 70),
+            SyntheticGraph.Edge(u: 1, v: 4, length: 80),
+            SyntheticGraph.Edge(u: 4, v: 2, length: 80),
+        ]
+        return SyntheticGraph(nodes: nodes, edges: edges)
+    }
 }

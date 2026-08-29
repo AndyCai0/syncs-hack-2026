@@ -1,0 +1,31 @@
+{
+  "": {
+    "dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/SafeRoutesEngineTests.d",
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/SafeRoutesEngineTests.o",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/primary.swiftdeps"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Tests/SafeRoutesEngineTests/GraphStoreTests.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/GraphStoreTests.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/GraphStoreTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/GraphStoreTests.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/GraphStoreTests.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Tests/SafeRoutesEngineTests/PlaceholderTests.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/PlaceholderTests.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/PlaceholderTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/PlaceholderTests.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/PlaceholderTests.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Tests/SafeRoutesEngineTests/RealGraphIntegrationTests.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/RealGraphIntegrationTests.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/RealGraphIntegrationTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/RealGraphIntegrationTests.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/RealGraphIntegrationTests.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Tests/SafeRoutesEngineTests/SyntheticGraph.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/SyntheticGraph.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/SyntheticGraph~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/SyntheticGraph.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngineTests.build/SyntheticGraph.dia"
+  }
+}

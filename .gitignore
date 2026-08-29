@@ -30,3 +30,6 @@ data/raw/australia-latest.osm.pbf
 
 # Binary graphs exceed GitHub 100MB hard limit; rebuild: scripts/export_binary_graph.py
 data/appdata/*.graph
+
+# built app bundle
+dist/

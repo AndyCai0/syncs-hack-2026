@@ -76,7 +76,7 @@ struct SidebarView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Safety priority: \(model.safetyPercent)%")
                 .font(.caption).fontWeight(.semibold)
-            Slider(value: $model.safety, in: 0 ... 1, step: 0.05)
+            Slider(value: $model.safety, in: 0 ... 1)
                 .tint(Theme.safe)
         }
     }

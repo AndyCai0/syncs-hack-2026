@@ -1,0 +1,31 @@
+{
+  "": {
+    "dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/SafeRoutesEngine.d",
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/SafeRoutesEngine.o",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/primary.swiftdeps"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutesEngine/GraphStore.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/GraphStore.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/GraphStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/GraphStore.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/GraphStore.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutesEngine/NativeRouter.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/NativeRouter.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/NativeRouter~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/NativeRouter.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/NativeRouter.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutesEngine/NativeRoutingEngine.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/NativeRoutingEngine.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/NativeRoutingEngine~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/NativeRoutingEngine.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/NativeRoutingEngine.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutesEngine/RoutingTypes.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/RoutingTypes.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/RoutingTypes~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/RoutingTypes.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutesEngine.build/RoutingTypes.dia"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "": {
+    "dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SafeRoutes.d",
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SafeRoutes.o",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/primary.swiftdeps"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutes/AddressSearch.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/AddressSearch.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/AddressSearch~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/AddressSearch.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/AddressSearch.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutes/AppModel.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/AppModel.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/AppModel~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/AppModel.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/AppModel.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutes/EngineProvider.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/EngineProvider.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/EngineProvider~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/EngineProvider.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/EngineProvider.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutes/GeoData.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/GeoData.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/GeoData~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/GeoData.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/GeoData.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutes/RouteMapView.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/RouteMapView.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/RouteMapView~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/RouteMapView.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/RouteMapView.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutes/SafeRoutesApp.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SafeRoutesApp.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SafeRoutesApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SafeRoutesApp.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SafeRoutesApp.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutes/SidebarView.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SidebarView.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SidebarView~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SidebarView.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/SidebarView.dia"
+  },
+  "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/Sources/SafeRoutes/Theme.swift": {
+    "object": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/Theme.swift.o",
+    "swiftmodule": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/Theme~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/Theme.swiftdeps",
+    "diagnostics": "/Users/andy/Desktop/Study/2026S2C/PEP/Hackson/SafeRoutesMac/.build/arm64-apple-macosx/release/SafeRoutes.build/Theme.dia"
+  }
+}

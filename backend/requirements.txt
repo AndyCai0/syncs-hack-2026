@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pandas
+geopandas
+shapely
+pyarrow
+openpyxl
+httpx
+python-dotenv

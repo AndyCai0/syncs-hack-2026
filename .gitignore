@@ -21,3 +21,9 @@ build/
 # Editors
 .vscode/
 .idea/
+
+# Data
+data/raw/
+
+# Machine-specific
+.claude/

@@ -143,18 +143,18 @@ public final class GraphStore: @unchecked Sendable {
         var egoff = [UInt32](repeating: 0, count: e)
         var egcnt = [UInt32](repeating: 0, count: e)
 
-        try data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+        data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
             let base = raw.baseAddress!
             if n > 0 {
-                lon.withUnsafeMutableBytes { memcpy($0.baseAddress!, base + nodeLonOff, n * 8) }
-                lat.withUnsafeMutableBytes { memcpy($0.baseAddress!, base + nodeLatOff, n * 8) }
+                _ = lon.withUnsafeMutableBytes { memcpy($0.baseAddress!, base + nodeLonOff, n * 8) }
+                _ = lat.withUnsafeMutableBytes { memcpy($0.baseAddress!, base + nodeLatOff, n * 8) }
             }
             guard e > 0 else { return }
             // Each EdgeRecord is eight 4-byte little-endian words. memcpy the
             // whole block into an aligned scratch buffer, then split it into
             // columns — much cheaper than nine unaligned loads per record.
             var words = [UInt32](repeating: 0, count: e * 8)
-            words.withUnsafeMutableBytes { memcpy($0.baseAddress!, base + edgesOff, e * 32) }
+            _ = words.withUnsafeMutableBytes { memcpy($0.baseAddress!, base + edgesOff, e * 32) }
             words.withUnsafeBufferPointer { wbuf in
                 let w = wbuf.baseAddress!
                 eu.withUnsafeMutableBufferPointer { pu in
@@ -202,29 +202,49 @@ public final class GraphStore: @unchecked Sendable {
 
         // --- CSR adjacency (undirected: both directions) --------------------
         var start = [Int32](repeating: 0, count: n + 1)
-        var degree = [Int32](repeating: 0, count: n)
-        for i in 0..<e {
-            let a = Int(eu[i]), b = Int(ev[i])
-            guard a < n, b < n else { throw GraphLoadError.corruptEdge(index: i) }
-            degree[a] += 1
-            degree[b] += 1
-        }
-        var running: Int32 = 0
-        for i in 0..<n {
-            start[i] = running
-            running += degree[i]
-        }
-        start[n] = running
-        var cursor = start // copy; cursor[i] is the next free slot for node i
         var aNode = [UInt32](repeating: 0, count: 2 * e)
         var aEdge = [UInt32](repeating: 0, count: 2 * e)
-        for i in 0..<e {
-            let a = Int(eu[i]), b = Int(ev[i])
-            var slot = Int(cursor[a]); cursor[a] += 1
-            aNode[slot] = UInt32(b); aEdge[slot] = UInt32(i)
-            slot = Int(cursor[b]); cursor[b] += 1
-            aNode[slot] = UInt32(a); aEdge[slot] = UInt32(i)
-        }
+        var badEdge = -1
+        eu.withUnsafeBufferPointer { euB in
+        ev.withUnsafeBufferPointer { evB in
+        start.withUnsafeMutableBufferPointer { startB in
+            guard let U = euB.baseAddress, let V = evB.baseAddress else { return }
+            let S = startB.baseAddress!
+            var degree = [Int32](repeating: 0, count: n + 1)
+            degree.withUnsafeMutableBufferPointer { degB in
+                let D = degB.baseAddress!
+                for i in 0..<e {
+                    let a = Int(U[i]), b = Int(V[i])
+                    if a >= n || b >= n {
+                        if badEdge < 0 { badEdge = i }
+                        continue
+                    }
+                    D[a] += 1
+                    D[b] += 1
+                }
+                var running: Int32 = 0
+                for i in 0..<n {
+                    S[i] = running
+                    running += D[i]
+                }
+                S[n] = running
+                // Reuse `degree` as the fill cursor.
+                for i in 0...n { D[i] = S[i] }
+                aNode.withUnsafeMutableBufferPointer { nodeB in
+                aEdge.withUnsafeMutableBufferPointer { edgeB in
+                    guard let AN = nodeB.baseAddress, let AE = edgeB.baseAddress else { return }
+                    for i in 0..<e {
+                        let a = Int(U[i]), b = Int(V[i])
+                        if a >= n || b >= n { continue }
+                        var slot = Int(D[a]); D[a] += 1
+                        AN[slot] = UInt32(b); AE[slot] = UInt32(i)
+                        slot = Int(D[b]); D[b] += 1
+                        AN[slot] = UInt32(a); AE[slot] = UInt32(i)
+                    }
+                }}
+            }
+        }}}
+        if badEdge >= 0 { throw GraphLoadError.corruptEdge(index: badEdge) }
         self.adjStart = start
         self.adjNode = aNode
         self.adjEdge = aEdge
@@ -232,12 +252,16 @@ public final class GraphStore: @unchecked Sendable {
         // --- uniform grid spatial index ------------------------------------
         var minLon = 0.0, minLat = 0.0, maxLon = 0.0, maxLat = 0.0
         if n > 0 {
-            minLon = lon[0]; maxLon = lon[0]; minLat = lat[0]; maxLat = lat[0]
-            for i in 1..<n {
-                let x = lon[i], y = lat[i]
-                if x < minLon { minLon = x } else if x > maxLon { maxLon = x }
-                if y < minLat { minLat = y } else if y > maxLat { maxLat = y }
-            }
+            lon.withUnsafeBufferPointer { lonB in
+            lat.withUnsafeBufferPointer { latB in
+                let X = lonB.baseAddress!, Y = latB.baseAddress!
+                minLon = X[0]; maxLon = X[0]; minLat = Y[0]; maxLat = Y[0]
+                for i in 1..<n {
+                    let x = X[i], y = Y[i]
+                    if x < minLon { minLon = x } else if x > maxLon { maxLon = x }
+                    if y < minLat { minLat = y } else if y > maxLat { maxLat = y }
+                }
+            }}
         }
         let cs = GraphStore.cellSize
         let nx = n > 0 ? max(1, Int((maxLon - minLon) / cs) + 1) : 1
@@ -247,28 +271,42 @@ public final class GraphStore: @unchecked Sendable {
         self.gridNX = nx
         self.gridNY = ny
 
-        var cellCount = [Int32](repeating: 0, count: nx * ny + 1)
-        var cellOf = [Int32](repeating: 0, count: n)
-        for i in 0..<n {
-            let ix = min(nx - 1, max(0, Int((lon[i] - minLon) / cs)))
-            let iy = min(ny - 1, max(0, Int((lat[i] - minLat) / cs)))
-            let ci = iy * nx + ix
-            cellOf[i] = Int32(ci)
-            cellCount[ci] += 1
-        }
-        var cStart = [Int32](repeating: 0, count: nx * ny + 1)
-        var acc: Int32 = 0
-        for i in 0..<(nx * ny) {
-            cStart[i] = acc
-            acc += cellCount[i]
-        }
-        cStart[nx * ny] = acc
-        var cCursor = cStart
+        let cellTotal = nx * ny
+        var cStart = [Int32](repeating: 0, count: cellTotal + 1)
         var cNodes = [UInt32](repeating: 0, count: n)
-        for i in 0..<n {
-            let ci = Int(cellOf[i])
-            cNodes[Int(cCursor[ci])] = UInt32(i)
-            cCursor[ci] += 1
+        if n > 0 {
+            var cellOf = [Int32](repeating: 0, count: n)
+            var cursor = [Int32](repeating: 0, count: cellTotal + 1)
+            lon.withUnsafeBufferPointer { lonB in
+            lat.withUnsafeBufferPointer { latB in
+            cellOf.withUnsafeMutableBufferPointer { cellOfB in
+            cursor.withUnsafeMutableBufferPointer { cursorB in
+            cStart.withUnsafeMutableBufferPointer { startB in
+            cNodes.withUnsafeMutableBufferPointer { nodesB in
+                let X = lonB.baseAddress!, Y = latB.baseAddress!
+                let CO = cellOfB.baseAddress!, CUR = cursorB.baseAddress!
+                let CS = startB.baseAddress!, CN = nodesB.baseAddress!
+                for i in 0..<n {
+                    let ix = min(nx - 1, max(0, Int((X[i] - minLon) / cs)))
+                    let iy = min(ny - 1, max(0, Int((Y[i] - minLat) / cs)))
+                    let ci = iy * nx + ix
+                    CO[i] = Int32(ci)
+                    CUR[ci] += 1
+                }
+                var acc: Int32 = 0
+                for i in 0..<cellTotal {
+                    let count = CUR[i]
+                    CS[i] = acc
+                    CUR[i] = acc
+                    acc += count
+                }
+                CS[cellTotal] = acc
+                for i in 0..<n {
+                    let ci = Int(CO[i])
+                    CN[Int(CUR[ci])] = UInt32(i)
+                    CUR[ci] += 1
+                }
+            }}}}}}
         }
         self.cellStart = cStart
         self.cellNodes = cNodes

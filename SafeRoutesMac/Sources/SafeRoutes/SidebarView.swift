@@ -7,27 +7,31 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Inputs stay pinned — never inside the scroll area.
+            VStack(alignment: .leading, spacing: 14) {
+                header
+                AddressField(
+                    label: "From",
+                    placeholder: "Home address…",
+                    text: $model.fromText,
+                    place: $model.fromPlace
+                )
+                AddressField(
+                    label: "To",
+                    placeholder: "School or destination…",
+                    text: $model.toText,
+                    place: $model.toPlace
+                )
+                hazardPreference
+                toggles
+                findButton
+                if let message = model.errorMessage {
+                    ErrorBanner(message: message)
+                }
+            }
+            .padding(18)
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    header
-                    AddressField(
-                        label: "From",
-                        placeholder: "Home address…",
-                        text: $model.fromText,
-                        place: $model.fromPlace
-                    )
-                    AddressField(
-                        label: "To",
-                        placeholder: "School or destination…",
-                        text: $model.toText,
-                        place: $model.toPlace
-                    )
-                    hazardPreference
-                    toggles
-                    findButton
-                    if let message = model.errorMessage {
-                        ErrorBanner(message: message)
-                    }
                     if model.routes != nil {
                         legend
                         comparison
@@ -37,10 +41,11 @@ struct SidebarView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
-                    Spacer(minLength: 8)
                 }
-                .padding(18)
+                .padding(.horizontal, 18)
+                .padding(.bottom, 12)
             }
+            .scrollBounceBehavior(.basedOnSize)
             Divider()
             footer
         }
